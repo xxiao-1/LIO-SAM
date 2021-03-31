@@ -77,6 +77,13 @@ link_directories(
   ${GTSAM_LIBRARY_DIRS}
 )
 
+IF(libpointmatcher_FOUND OR GTSAM_FOUND)
+	find_package(Boost COMPONENTS thread filesystem system program_options date_time REQUIRED)
+	IF(Boost_MINOR_VERSION GREATER 47)
+		find_package(Boost COMPONENTS thread filesystem system program_options date_time chrono timer REQUIRED)
+	ENDIF(Boost_MINOR_VERSION GREATER 47)
+ENDIF(libpointmatcher_FOUND OR GTSAM_FOUND)
+
 ###########
 ## Build ##
 ###########
