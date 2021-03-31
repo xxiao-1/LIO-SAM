@@ -16,6 +16,9 @@
 #include <gtsam/inference/Symbol.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
+//for output
+#include <fstream>
+#include <iostream>
 
 using namespace gtsam;
 
@@ -51,7 +54,7 @@ class mapOptimization : public ParamServer
 {
 
 public:
-
+    ofstream myfile;
     // gtsam
     NonlinearFactorGraph gtSAMgraph;
     Values initialEstimate;
@@ -369,6 +372,20 @@ public:
       pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
       pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
       pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
+      // save pose
+        myfile.open("/home/xxiao/data/pose-lio-sam.txt",ios::app); //pose
+        myfile.precision(10);
+        for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
+            *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);
+            *globalSurfCloud   += *transformPointCloud(surfCloudKeyFrames[i],    &cloudKeyPoses6D->points[i]);
+            cout << "\r" << std::flush << "Processing feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
+
+            myfile<< ros::Time().fromSec(cloudKeyPoses6D->points[i].time)<<" ";
+            myfile <<cloudKeyPoses6D->points[i].x<< " " <<cloudKeyPoses6D->points[i].y<< " "<<cloudKeyPoses6D->points[i].z;
+            myfile <<" " << cloudKeyPoses6D->points[i].roll<< " " <<cloudKeyPoses6D->points[i].pitch  << " " << cloudKeyPoses6D->points[i].yaw <<" "<<0;
+            myfile<< "\n";
+        }
+        myfile.close();
       for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
           *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);
           *globalSurfCloud   += *transformPointCloud(surfCloudKeyFrames[i],    &cloudKeyPoses6D->points[i]);
