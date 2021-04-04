@@ -12,7 +12,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-
+#include "lio_sam/chassis_data.h"
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
@@ -158,9 +158,14 @@ class IMUPreintegration : public ParamServer
 public:
 
     std::mutex mtx;
-
+    struct DynamicMeasurement{
+        double time;
+        Eigen::Vector3d  velocity;
+        Eigen::Vector3d  angle;
+    };
     ros::Subscriber subImu;
     ros::Subscriber subOdometry;
+    ros::Subscriber subChassis;
     ros::Publisher pubImuOdometry;
 
     bool systemInitialized = false;
@@ -206,6 +211,7 @@ public:
     {
         subImu      = nh.subscribe<sensor_msgs::Imu>  (imuTopic,                   2000, &IMUPreintegration::imuHandler,      this, ros::TransportHints().tcpNoDelay());
         subOdometry = nh.subscribe<nav_msgs::Odometry>("lio_sam/mapping/odometry_incremental", 5,    &IMUPreintegration::odometryHandler, this, ros::TransportHints().tcpNoDelay());
+        subChassis = nh.subscribe<lio_sam::chassis_data>("/chassis_msgs", 2000, &IMUPreintegration::chassisHandler, this, ros::TransportHints().tcpNoDelay());
 
         pubImuOdometry = nh.advertise<nav_msgs::Odometry> (odomTopic+"_incremental", 2000);
 
@@ -245,6 +251,45 @@ public:
         lastImuT_imu = -1;
         doneFirstOpt = false;
         systemInitialized = false;
+    }
+
+    void chassisHandler(const lio_sam::chassis_data::ConstPtr& chassis_msg){
+        DynamicMeasurement thisChassis=vehicleDynamicsModel1(chassis_msg->header.stamp.toSec(),chassis_msg->Velocity,chassis_msg->SteeringAngle);
+        //chassisQueOpt.push_back(thisChassis);
+    }
+    DynamicMeasurement vehicleDynamicsModel1(double  t,double Velocity, double Steer){
+        DynamicMeasurement chassis_out;
+        chassis_out.time=t;
+        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        double vel = 0, vx = 0, vy = 0, vz = 0;
+        double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
+        double beta;
+        const double k1=30082*2;//front tyre
+        const double k2=31888*2;//rear tyre
+        const double mass=1096;//zhiliang
+        const double len=2.3;
+        const double len_a=1.0377;//qianzhou
+        const double len_b=1.2623;//houzhou
+        const double i0=17.4;
+        const double K=mass*(len_a/k2-len_b/k1)/(len*len);
+
+        vel = Velocity / 3.6;//速度
+        steer = (Steer + bias) * M_PI / 180;//方向盘转角
+
+        //!dynamics
+        beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
+        vx = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
+        vz = -vel * cos(beta);//TODO:vz vy?
+        ry = -vel * steer / i0 / len / (1 - K * vel * vel);//omiga
+
+        chassis_out.velocity={vx,vy,vz};
+        //!correct slide
+        ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
+        chassis_out.angle={rx,ry,rz};
+        //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
+        ROS_INFO("chassis vel and angular_vel is %f,%f,%f", vx, -vz, ry);//right,front,yaw
+        return chassis_out;
+
     }
 
     void odometryHandler(const nav_msgs::Odometry::ConstPtr& odomMsg)

@@ -30,6 +30,7 @@ add_message_files(
   DIRECTORY msg
   FILES
   cloud_info.msg
+  chassis_data.msg
 )
 
 add_service_files(
