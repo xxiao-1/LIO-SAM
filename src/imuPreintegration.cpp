@@ -1,4 +1,5 @@
 #include "utility.h"
+#include "dynamic_factor.h"
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>

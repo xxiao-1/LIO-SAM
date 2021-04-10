@@ -173,7 +173,7 @@ public:
         nh.param<std::string>("lio_sam/savePCDDirectory", savePCDDirectory, "/Downloads/LOAM/");
 
         std::string sensorStr;
-        nh.param<std::string>("lio_sam/sensor", sensorStr, "");
+        nh.param<std::string>("lio_sam/sensor", sensorStr, "velodyne");
         if (sensorStr == "velodyne")
         {
             sensor = SensorType::VELODYNE;
