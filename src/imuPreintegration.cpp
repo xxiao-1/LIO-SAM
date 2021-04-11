@@ -280,7 +280,7 @@ public:
         //!dynamics
         beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
         vx = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
-        vz = -vel * cos(beta);//TODO:vz vy?
+        vy = -vel * cos(beta);//TODO:vz vy?change from vz to vy
         ry = -vel * steer / i0 / len / (1 - K * vel * vel);//omiga
 
         chassis_out.velocity={vx,vy,vz};
@@ -288,7 +288,7 @@ public:
         ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
         chassis_out.angle={rx,ry,rz};
         //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
-        ROS_INFO("chassis vel and angular_vel is %f,%f,%f", vx, -vz, ry);//right,front,yaw
+        ROS_INFO("chassis angular_vel is %f,%f,%f", vx, -vy, ry);//right,front,yaw
         return chassis_out;
 
     }
@@ -436,6 +436,7 @@ public:
         prevPose_  = result.at<gtsam::Pose3>(X(key));
         prevVel_   = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
+        std::cout<<"优化后的prevState为"<<prevState_<<std::endl;
         prevBias_  = result.at<gtsam::imuBias::ConstantBias>(B(key));
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
