@@ -24,17 +24,12 @@ namespace gtsam {
 //------------------------------------------------------------------------------
      void DynamicsBase::resetIntegration() {
         std::cout<<"GTSAM-resetDynamicsIntegration-开始4"<<std::endl;
-//        std::cout<<"dt="<<dt<<std::endl;
-//        dt= 0;
+
         std::cout<<"GTSAM-sum_dt-开始"<<std::endl;
         sum_dt=0;
-//        vel0.setZero();
-        std::cout<<"GTSAM-vel0-开始"<<std::endl;
         vel0(0)=0;
         vel0(1)=0;
         vel0(2)=0;
-        std::cout<<"GTSAM-omiga0-开始"<<std::endl;
-//        omiga0.setZero();
         omiga0(0)=0;
         omiga0(1)=0;
         omiga0(2)=0;
@@ -60,7 +55,7 @@ namespace gtsam {
                               Eigen::Vector3d &result_delta_p, Eigen::Quaterniond &result_delta_q, Eigen::Vector3d &result_delta_v,
                               bool update_jacobian)
     {
-        //ROS_INFO("midpoint integration");
+        ROS_INFO("midpoint integration");
         Vector3d un_vel0 = delta_q * _vel0;
         result_delta_q = delta_q * Quaterniond(1, _omiga0(0) * _dt / 2, _omiga0(1) * _dt / 2, _omiga0(2) * _dt / 2);
         result_delta_p = delta_p + un_vel0 *_dt;
@@ -95,12 +90,13 @@ namespace gtsam {
 
     }
 
-    Eigen::Matrix<double, 6, 1> DynamicsBase::evaluate(const Eigen::Vector3d &Pi, const Eigen::Quaterniond &Qi, const Eigen::Vector3d &Pj, const Eigen::Quaterniond &Qj)
+    Eigen::Matrix<double, 6, 1> DynamicsBase::evaluate(const Eigen::Vector3d Pi, const Eigen::Quaterniond Qi, const Eigen::Vector3d Pj, const Eigen::Quaterniond Qj)
     {
         Eigen::Matrix<double, 6, 1> residuals;
         residuals.setZero();
         residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
         residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
+        std::cout<<"residuals is "<<residuals<<std::endl;
         return residuals;
     }
 

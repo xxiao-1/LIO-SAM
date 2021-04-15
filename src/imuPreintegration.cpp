@@ -40,6 +40,7 @@ public:
     tf::StampedTransform lidar2Baselink;
 
     double lidarOdomTime = -1;
+
     deque<nav_msgs::Odometry> imuOdomQueue;
 
     TransformFusion()
@@ -185,6 +186,9 @@ public:
     std::deque<sensor_msgs::Imu> imuQueOpt;
     std::deque<sensor_msgs::Imu> imuQueImu;
 
+    std::deque<DynamicMeasurement> chaQueOpt;
+    std::deque<DynamicMeasurement> chaQueCha;
+
     gtsam::Pose3 prevPose_;
     gtsam::Vector3 prevVel_;
     gtsam::NavState prevState_;
@@ -196,7 +200,7 @@ public:
     bool doneFirstOpt = false;
     double lastImuT_imu = -1;
     double lastImuT_opt = -1;
-
+    double lastChassisT_opt = -1;
     gtsam::ISAM2 optimizer;
     gtsam::NonlinearFactorGraph graphFactors;
     gtsam::Values graphValues;
@@ -256,14 +260,15 @@ public:
 
     void chassisHandler(const lio_sam::chassis_data::ConstPtr& chassis_msg){
         DynamicMeasurement thisChassis=vehicleDynamicsModel1(chassis_msg->header.stamp.toSec(),chassis_msg->Velocity,chassis_msg->SteeringAngle);
-        //chassisQueOpt.push_back(thisChassis);
+        chaQueOpt.push_back(thisChassis);
+        chaQueCha.push_back(thisChassis);
     }
     DynamicMeasurement vehicleDynamicsModel1(double  t,double Velocity, double Steer){
         DynamicMeasurement chassis_out;
         chassis_out.time=t;
         std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double vel = 0, vx = 0, vy = 0, vz = 0;
-        double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
+        double steer = 0,rx = 0, ry = 0, rz = 0, bias = 0;
         double beta;
         const double k1=30082*2;//front tyre
         const double k2=31888*2;//rear tyre
@@ -280,15 +285,14 @@ public:
         //!dynamics
         beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
         vx = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
-        vy = -vel * cos(beta);//TODO:vz vy?change from vz to vy
-        ry = -vel * steer / i0 / len / (1 - K * vel * vel);//omiga
-
+        vz = -vel * cos(beta);
+        ry = -vel * steer / i0 / len / (1 - K * vel * vel);
         chassis_out.velocity={vx,vy,vz};
         //!correct slide
-        ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
-        chassis_out.angle={rx,ry,rz};
+        //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
+        chassis_out.angle={rx, ry, rz};
         //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
-        ROS_INFO("chassis angular_vel is %f,%f,%f", vx, -vy, ry);//right,front,yaw
+        //ROS_INFO("chassis angular_vel is %f,%f,%f",roll,pitch,yaw);//right,front,yaw
         return chassis_out;
 
     }
@@ -410,6 +414,30 @@ public:
             else
                 break;
         }
+        gtsam::DynamicsBase chassisIntegratorOpt_(0.0);
+        bool flag=false;
+        // 2. integrate dynamic data and optimize
+        while (!chaQueOpt.empty())
+        {
+            // pop and integrate imu data that is between two optimizations
+            DynamicMeasurement *thisChassis = & chaQueOpt.front();
+            double chaTime =thisChassis->time;
+            if (chaTime < currentCorrectionTime - delta_t)
+            {
+                double dt = (lastChassisT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChassisT_opt);
+                chassisIntegratorOpt_.push_back(dt,thisChassis->velocity, thisChassis->angle);
+                lastChassisT_opt = chaTime;
+                chaQueOpt.pop_front();
+                flag=true;
+            }
+            else{
+                if(flag){
+                    chassisIntegratorOpt_.showDelt();
+                }
+                break;
+            }
+
+        }
         // add imu factor to graph
         const gtsam::PreintegratedImuMeasurements& preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements&>(*imuIntegratorOpt_);
         gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
@@ -447,6 +475,22 @@ public:
             return;
         }
 
+        gtsam::Pose3 prevPose_i=result.at<gtsam::Pose3>(X(key-1));
+        Eigen::Quaterniond Qi= prevPose_i.rotation().toQuaternion();
+        Eigen::Quaterniond Qj= prevPose_.rotation().toQuaternion();
+        Eigen::Vector3d Pi=prevPose_i.translation();
+        Eigen::Vector3d Pj=prevPose_.translation();
+        Eigen::Vector3d delta_p;
+        Eigen::Quaterniond delta_q;
+        delta_p=chassisIntegratorOpt_.getDeltaP();
+        delta_q=chassisIntegratorOpt_.getDeltaQ();
+        std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
+        std::cout<<"delta_p="<<delta_p<<"delta_q="<<delta_q.x()<<delta_q.y()<<delta_q.z()<<delta_q.w()<<std::endl;
+        Eigen::Matrix<double, 6, 1> residuals;
+        residuals.setZero();
+        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
+        residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
+        std::cout<<"residuals is "<<residuals<<std::endl;
 
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;
@@ -515,7 +559,8 @@ public:
         double imuTime = ROS_TIME(&thisImu);
         double dt = (lastImuT_imu < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_imu);
         lastImuT_imu = imuTime;
-
+        ROS_INFO("--imu vel is %f,%f,%f", thisImu.linear_acceleration.x, thisImu.linear_acceleration.y, thisImu.linear_acceleration.z);
+        ROS_INFO("--imu angular_velocity is %f,%f,%f", thisImu.angular_velocity.x, thisImu.angular_velocity.y, thisImu.angular_velocity.z);
         // integrate this single imu message
         imuIntegratorImu_->integrateMeasurement(gtsam::Vector3(thisImu.linear_acceleration.x, thisImu.linear_acceleration.y, thisImu.linear_acceleration.z),
                                                 gtsam::Vector3(thisImu.angular_velocity.x,    thisImu.angular_velocity.y,    thisImu.angular_velocity.z), dt);

@@ -53,6 +53,17 @@
 #include <thread>
 #include <mutex>
 
+#include <Eigen/Dense> //包含了下面的Core/Geometry/LU/Cholesky/SVD/QR/Eigenvalues模块
+#include <Eigen/Core> // 包含Matrix和Array类，基础的线性代数运算和数组操作
+#include <Eigen/LU> // 包含求逆，行列式，LU分解
+#include <Eigen/Geometry> //包含旋转，平移，缩放，2维和3维的各种变换。
+#include <Eigen/Cholesky> //包含LLT和LDLT Cholesky分解
+#include <Eigen/SVD> //包含SVD分解
+#include <Eigen/QR> //包含QR分解
+#include <Eigen/Eigenvalues> //包含特征值，特征向量分解
+#include <Eigen/Sparse> //包含稀疏矩阵的存储和运算
+#include <Eigen/Eigen> //包含Dense和Sparse
+
 using namespace std;
 
 typedef pcl::PointXYZI PointType;
