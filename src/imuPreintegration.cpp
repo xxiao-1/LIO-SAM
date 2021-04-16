@@ -464,7 +464,7 @@ public:
         prevPose_  = result.at<gtsam::Pose3>(X(key));
         prevVel_   = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
-        std::cout<<"优化后的prevState为"<<prevState_<<std::endl;
+        std::cout<<"优化后的prevState为---------------------------------"<<std::endl<<prevState_<<std::endl;
         prevBias_  = result.at<gtsam::imuBias::ConstantBias>(B(key));
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
@@ -484,13 +484,15 @@ public:
         Eigen::Quaterniond delta_q;
         delta_p=chassisIntegratorOpt_.getDeltaP();
         delta_q=chassisIntegratorOpt_.getDeltaQ();
-        std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
-        std::cout<<"delta_p="<<delta_p<<"delta_q="<<delta_q.x()<<delta_q.y()<<delta_q.z()<<delta_q.w()<<std::endl;
+       // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
+        std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
+        std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
         Eigen::Matrix<double, 6, 1> residuals;
         residuals.setZero();
-        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
+//        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
+        residuals.block<3, 1>(0, 0) = (Pj - Pi) - Qi*delta_p;
         residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-        std::cout<<"residuals is "<<residuals<<std::endl;
+        std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
 
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;
