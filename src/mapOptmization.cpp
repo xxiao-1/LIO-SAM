@@ -373,7 +373,7 @@ public:
       pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
       pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
       // save pose
-        myfile.open("/home/xxiao/data/pose-lio-sam.txt",ios::app); //pose
+        myfile.open("/home/xxiao/data/lio-sam/pose-lio-sam.txt",ios::app); //pose
         myfile.precision(10);
         for (int i = 0; i < (int)cloudKeyPoses3D->size(); i++) {
             *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);

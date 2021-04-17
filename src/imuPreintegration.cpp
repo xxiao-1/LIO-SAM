@@ -280,13 +280,13 @@ public:
         const double K=mass*(len_a/k2-len_b/k1)/(len*len);
 
         vel = Velocity / 3.6;//速度
-        steer = (Steer + bias) * M_PI / 180;//方向盘转角
+        steer = -(Steer + bias) * M_PI / 180;//方向盘转角
 
         //!dynamics
         beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
-        vx = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
-        vz = -vel * cos(beta);
-        ry = -vel * steer / i0 / len / (1 - K * vel * vel);
+        vy = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
+        vx = vel * cos(beta);
+        rz = vel * steer / i0 / len / (1 - K * vel * vel);
         chassis_out.velocity={vx,vy,vz};
         //!correct slide
         //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
@@ -480,13 +480,16 @@ public:
         Eigen::Quaterniond Qj= prevPose_.rotation().toQuaternion();
         Eigen::Vector3d Pi=prevPose_i.translation();
         Eigen::Vector3d Pj=prevPose_.translation();
+        Eigen::Vector3d Piimu=propState_.position();
         Eigen::Vector3d delta_p;
         Eigen::Quaterniond delta_q;
         delta_p=chassisIntegratorOpt_.getDeltaP();
         delta_q=chassisIntegratorOpt_.getDeltaQ();
        // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
         std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
+        std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
         std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
+        std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
         Eigen::Matrix<double, 6, 1> residuals;
         residuals.setZero();
 //        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
