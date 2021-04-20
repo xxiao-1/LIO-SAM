@@ -16,7 +16,7 @@
 #include "lio_sam/chassis_data.h"
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-
+using namespace gtsam;
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
@@ -266,7 +266,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel1(double  t,double Velocity, double Steer){
         DynamicMeasurement chassis_out;
         chassis_out.time=t;
-        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        //std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double vel = 0, vx = 0, vy = 0, vz = 0;
         double steer = 0,rx = 0, ry = 0, rz = 0, bias = 0;
         double beta;
@@ -431,7 +431,7 @@ public:
                 flag=true;
             }
             else{
-                if(flag){
+                if(!flag){
                     chassisIntegratorOpt_.showDelt();
                 }
                 break;
@@ -449,6 +449,43 @@ public:
         gtsam::Pose3 curPose = lidarPose.compose(lidar2Imu);
         gtsam::PriorFactor<gtsam::Pose3> pose_factor(X(key), curPose, degenerate ? correctionNoise2 : correctionNoise);
         graphFactors.add(pose_factor);
+
+        //add chassis factor 1
+//        noiseModel::Diagonal::shared_ptr chassisNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+//        gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
+//        gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
+//        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
+//        (Qi*delta_p)
+//        gtSAMgraph.add(BetweenFactor<Pose3>(X(key-1), X(key), poseFrom.between(poseTo), chassisNoise));
+
+        // add chassis factor 2
+        gtsam::Pose3 poseFrom=prevPose_;
+        Eigen::Vector3d Pi=poseFrom.translation();
+        Eigen::Quaterniond Qi= poseFrom.rotation().toQuaternion();
+        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
+        Eigen::Quaterniond delta_q=chassisIntegratorOpt_.getDeltaQ();
+        Eigen::Matrix<double, 6, 6> chassisCovariance= chassisIntegratorOpt_.getCovariance();
+        float transformChassis[3];
+        for (int i=0;i<3;i++){
+            transformChassis[i]=Pi[i]+delta_p[i];
+        }
+        Eigen::Quaterniond Qj= delta_q*Qi;
+        gtsam::Pose3 poseTo   = gtsam::Pose3(gtsam::Rot3(Qj),
+                                             gtsam::Point3(transformChassis[0], transformChassis[1], transformChassis[2]));
+        gtsam::noiseModel::Diagonal::shared_ptr chassisNoise1 = gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+        gtsam::SharedNoiseModel chassisNoise2 =
+                gtsam::noiseModel::Gaussian::Covariance(chassisCovariance);
+
+        std::cout<<"poseFrom is "<<poseFrom<<std::endl;
+        std::cout<<"poseTo is "<<poseTo<<std::endl;
+//        std::cout<<"chassisNoise2 is "<<chassisNoise2<<std::endl;
+//        std::cout<<"imu_factor is "<<imu_factor<<std::endl;
+        graphFactors.add(BetweenFactor<Pose3>(X(key-1), X(key), poseFrom.between(poseTo), chassisNoise2));
+
+        // add chassis pose factor
+        gtsam::PriorFactor<gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
+        graphFactors.add(cha_pose_factor);
+
         // insert predicted values
         gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
         graphValues.insert(X(key), propState_.pose());
@@ -475,27 +512,26 @@ public:
             return;
         }
 
-        gtsam::Pose3 prevPose_i=result.at<gtsam::Pose3>(X(key-1));
-        Eigen::Quaterniond Qi= prevPose_i.rotation().toQuaternion();
-        Eigen::Quaterniond Qj= prevPose_.rotation().toQuaternion();
-        Eigen::Vector3d Pi=prevPose_i.translation();
-        Eigen::Vector3d Pj=prevPose_.translation();
-        Eigen::Vector3d Piimu=propState_.position();
-        Eigen::Vector3d delta_p;
-        Eigen::Quaterniond delta_q;
-        delta_p=chassisIntegratorOpt_.getDeltaP();
-        delta_q=chassisIntegratorOpt_.getDeltaQ();
-       // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
-        std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
-        std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
-        std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
-        std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
-        Eigen::Matrix<double, 6, 1> residuals;
-        residuals.setZero();
-//        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
-        residuals.block<3, 1>(0, 0) = (Pj - Pi) - Qi*delta_p;
-        residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-        std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
+        // output for test
+//        gtsam::Pose3 prevPose_i=result.at<gtsam::Pose3>(X(key-1));
+//        Eigen::Quaterniond Qi= prevPose_i.rotation().toQuaternion();
+//        Eigen::Quaterniond Qj= prevPose_.rotation().toQuaternion();
+//        Eigen::Vector3d Pi=prevPose_i.translation();
+//        Eigen::Vector3d Pj=prevPose_.translation();
+//        Eigen::Vector3d Piimu=propState_.position();
+//        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
+//        Eigen::Quaterniond delta_q=chassisIntegratorOpt_.getDeltaQ();
+//       // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
+//        std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
+//        std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
+//        std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
+//        std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
+//        Eigen::Matrix<double, 6, 1> residuals;
+//        residuals.setZero();
+////        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
+//        residuals.block<3, 1>(0, 0) = (Pj - Pi) - Qi*delta_p;
+//        residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
+//        std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
 
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;

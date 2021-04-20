@@ -79,13 +79,21 @@ namespace gtsam {
 
 
                 MatrixXd F = MatrixXd::Zero(6, 6);
-                F.block<3, 3>(0, 0) = Matrix3d::Identity();
-                F.block<3, 3>(0, 3) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
-                F.block<3, 3>(3, 3) = Matrix3d::Identity() - R_w_x * _dt;
+//                F.block<3, 3>(0, 0) = Matrix3d::Identity();
+//                F.block<3, 3>(0, 3) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
+//                F.block<3, 3>(3, 3) = Matrix3d::Identity() - R_w_x * _dt;
+//
+//                MatrixXd V = MatrixXd::Zero(6, 6);
+//                V.block<3, 3>(0, 0) = delta_q.toRotationMatrix() * _dt;
+//                V.block<3, 3>(3, 3) = MatrixXd::Identity(3, 3) * _dt;
+
+                F.block<3, 3>(3, 3) = Matrix3d::Identity();
+                F.block<3, 3>(3, 0) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
+                F.block<3, 3>(0, 0) = Matrix3d::Identity() - R_w_x * _dt;
 
                 MatrixXd V = MatrixXd::Zero(6, 6);
-                V.block<3, 3>(0, 0) = delta_q.toRotationMatrix() * _dt;
-                V.block<3, 3>(3, 3) = MatrixXd::Identity(3, 3) * _dt;
+                V.block<3, 3>(3 ,3) = delta_q.toRotationMatrix() * _dt;
+                V.block<3, 3>(0, 0) = MatrixXd::Identity(3, 3) * _dt;
 
                 jacobian = F * jacobian;
                 covariance = F * covariance * F.transpose() + V * noise * V.transpose();
@@ -109,6 +117,10 @@ namespace gtsam {
         Quaterniond getDeltaQ(){
             return delta_q;
         }
+        Eigen::Matrix<double, 6, 6> getCovariance(){
+            return covariance;
+        }
+
 
         void dynamics_Integration(double _dt,
                                   const Eigen::Vector3d &_vel0, const Eigen::Vector3d &_omiga0,

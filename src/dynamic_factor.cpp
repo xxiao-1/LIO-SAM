@@ -33,19 +33,12 @@ namespace gtsam {
         omiga0(0)=0;
         omiga0(1)=0;
         omiga0(2)=0;
-        std::cout<<"GTSAM-covariance-开始"<<std::endl;
         covariance.setZero();
-        std::cout<<"GTSAM-jacobian-开始"<<std::endl;
         jacobian.setZero();
-        std::cout<<"GTSAM-noise-开始"<<std::endl;
         noise.setZero();
-        std::cout<<"GTSAM-delta_p-开始"<<std::endl;
         delta_p.setZero();
-        std::cout<<"GTSAM-delta_q-开始"<<std::endl;
         delta_q.setIdentity();
-        std::cout<<"GTSAM-delta_v-开始"<<std::endl;
         delta_v.setZero();
-        std::cout<<"GTSAM-resetDynamicsIntegration-结束"<<std::endl;
     }
 
 //------------------------------------------------------------------------------
@@ -150,9 +143,9 @@ namespace gtsam {
 
 
         Eigen::Matrix<double, 6, 1>  residual= dynamics_integration->evaluate(Pi, Qi, Pj, Qj);
-        Eigen::Matrix<double, 6, 6> sqrt_info = Eigen::LLT<Eigen::Matrix<double, 6, 6>>(_DB_.covariance.inverse()).matrixL().transpose();
+        //Eigen::Matrix<double, 6, 6> sqrt_info = Eigen::LLT<Eigen::Matrix<double, 6, 6>>(_DB_.covariance.inverse()).matrixL().transpose();
         //sqrt_info.setIdentity();
-        residual = sqrt_info * residual;
+        //residual = sqrt_info * residual;
         if (dynamics_integration->jacobian.maxCoeff() > 1e8 || dynamics_integration->jacobian.minCoeff() < -1e8)
         {
             std::cout<<"numerical unstable in dynamics integration"<<std::endl;
