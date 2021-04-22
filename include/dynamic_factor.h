@@ -58,7 +58,7 @@ namespace gtsam {
 
 //            dynamics_Integration(_dt, vel0, omiga0, delta_p, delta_q, delta_v,
 //                                 result_delta_p, result_delta_q, result_delta_v, 1);
-            ROS_INFO("midpoint integration");
+//            ROS_INFO("midpoint integration");
             Vector3d un_vel0 = delta_q * _vel0;
             result_delta_q = delta_q * Quaterniond(1, _omiga0(0) * _dt / 2, _omiga0(1) * _dt / 2, _omiga0(2) * _dt / 2);
             result_delta_p = delta_p + un_vel0 *_dt;

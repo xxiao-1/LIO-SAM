@@ -460,6 +460,13 @@ public:
         gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, degenerate ? correctionNoise2 : correctionNoise);
         graphFactors.add(pose_factor);
 
+        // insert predicted values
+        gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
+        graphValues.insert(X(key), propState_.pose());
+        graphValues.insert(V(key), propState_.v());
+        graphValues.insert(B(key), prevBias_);
+
+
         //add chassis factor 1
 //        noiseModel::Diagonal::shared_ptr chassisNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
 //        gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
@@ -492,14 +499,11 @@ public:
             // add chassis pose factor
             gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);
+//            graphValues.insert(X(key), poseTo);
             std::cout << "add chassis factor" << std::endl;
         }
 
-        // insert predicted values
-        gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
-        graphValues.insert(X(key), propState_.pose());
-        graphValues.insert(V(key), propState_.v());
-        graphValues.insert(B(key), prevBias_);
+
         // optimize
         optimizer.update(graphFactors, graphValues);
         optimizer.update();
