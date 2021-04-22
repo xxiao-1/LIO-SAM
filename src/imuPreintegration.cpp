@@ -275,7 +275,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel1(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        //std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double vel = 0, vx = 0, vy = 0, vz = 0;
         double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
         double beta;
