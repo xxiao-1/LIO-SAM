@@ -171,6 +171,7 @@ public:
     gtsam::noiseModel::Diagonal::shared_ptr priorBiasNoise;
     gtsam::noiseModel::Diagonal::shared_ptr correctionNoise;
     gtsam::noiseModel::Diagonal::shared_ptr correctionNoise2;
+    gtsam::noiseModel::Diagonal::shared_ptr correctionNoise3;
     gtsam::Vector noiseModelBetweenBias;
 
 
@@ -237,6 +238,8 @@ public:
                 (gtsam::Vector(6) << 0.05, 0.05, 0.05, 0.1, 0.1, 0.1).finished()); // rad,rad,rad,m, m, m
         correctionNoise2 = gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << 1, 1, 1, 1, 1, 1).finished()); // rad,rad,rad,m, m, m
+        correctionNoise3 = gtsam::noiseModel::Diagonal::Sigmas(
+                (gtsam::Vector(6) << 1, 1, 1, 100, 100, 100).finished()); // rad,rad,rad,m, m, m
         noiseModelBetweenBias = (gtsam::Vector(6)
                 << imuAccBiasN, imuAccBiasN, imuAccBiasN, imuGyrBiasN, imuGyrBiasN, imuGyrBiasN).finished();
 
@@ -275,7 +278,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel1(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        //std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double vel = 0, vx = 0, vy = 0, vz = 0;
         double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
         double beta;
@@ -323,6 +326,7 @@ public:
         float r_z = odomMsg->pose.pose.orientation.z;
         float r_w = odomMsg->pose.pose.orientation.w;
         bool degenerate = (int) odomMsg->pose.covariance[0] == 1 ? true : false;
+        std::cout<<"degenerate="<<degenerate<<std::endl;
         gtsam::Pose3 lidarPose = gtsam::Pose3(gtsam::Rot3::Quaternion(r_w, r_x, r_y, r_z),
                                               gtsam::Point3(p_x, p_y, p_z));
 
@@ -458,7 +462,16 @@ public:
         // add pose factor
         gtsam::Pose3 curPose = lidarPose.compose(lidar2Imu);
         gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, degenerate ? correctionNoise2 : correctionNoise);
+        // mock lidar not good
+ //       gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, correctionNoise3);
         graphFactors.add(pose_factor);
+
+        // insert predicted values
+        gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
+        graphValues.insert(X(key), propState_.pose());
+        graphValues.insert(V(key), propState_.v());
+        graphValues.insert(B(key), prevBias_);
+
 
         //add chassis factor 1
 //        noiseModel::Diagonal::shared_ptr chassisNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
@@ -492,14 +505,11 @@ public:
             // add chassis pose factor
             gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);
+//            graphValues.insert(X(key), poseTo);
             std::cout << "add chassis factor" << std::endl;
         }
 
-        // insert predicted values
-        gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
-        graphValues.insert(X(key), propState_.pose());
-        graphValues.insert(V(key), propState_.v());
-        graphValues.insert(B(key), prevBias_);
+
         // optimize
         optimizer.update(graphFactors, graphValues);
         optimizer.update();
