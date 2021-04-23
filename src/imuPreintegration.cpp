@@ -466,16 +466,7 @@ public:
         graphValues.insert(V(key), propState_.v());
         graphValues.insert(B(key), prevBias_);
 
-
-        //add chassis factor 1
-//        noiseModel::Diagonal::shared_ptr chassisNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
-//        gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
-//        gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
-//        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
-//        (Qi*delta_p)
-//        gtSAMgraph.add(BetweenFactor<Pose3>(X(key-1), X(key), poseFrom.between(poseTo), chassisNoise));
-
-        // add chassis factor 2
+        // add chassis factor 1
         if (useChassis) {
             gtsam::Pose3 poseFrom = prevPose_;
             Eigen::Vector3d Pi = poseFrom.translation();
