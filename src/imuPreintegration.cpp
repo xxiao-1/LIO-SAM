@@ -502,10 +502,9 @@ public:
             gtsam::SharedNoiseModel chassisNoise2 =
                     gtsam::noiseModel::Gaussian::Covariance(chassisCovariance);
             graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
-            // add chassis pose factor
             gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);
-//            graphValues.insert(X(key), poseTo);
+            // 我发现了 insert.value的值是imu的预测值，如果imu不准，岂不是惨兮兮
             std::cout << "add chassis factor" << std::endl;
         }
 
