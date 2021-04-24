@@ -2,7 +2,7 @@ lio_sam:
 
   # Topics
   pointCloudTopic: "/velodyne_points"               # Point cloud data
-  imuTopic: "/mti/sensor/imu"                         # IMU data
+  imuTopic: "/zed2/zed_node/imu/data"                         # IMU data
   odomTopic: "odometry/imu"                   # IMU pre-preintegration odometry, same frequency as IMU
   gpsTopic: "odometry/gpsz"                   # GPS odometry topic from navsat, see module_navsat.launch file
 
@@ -13,7 +13,7 @@ lio_sam:
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # chassis Settings
-  useChassis: true
+  useChassis: false
 
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
@@ -26,16 +26,16 @@ lio_sam:
   downsampleRate: 1                           # default: 1. Downsample your data if too many points. i.e., 16 = 64 / 4, 16 = 16 / 1 
 
   # IMU Settings
-  imuAccNoise: 3.9939570888238808e-03
-  imuGyrNoise: 1.5636343949698187e-03
-  imuAccBiasN: 6.4356659353532566e-05
-  imuGyrBiasN: 3.5640318696367613e-05
+  imuAccNoise: 0.2
+  imuGyrNoise: 0.05
+  imuAccBiasN: 0.02
+  imuGyrBiasN: 400
   imuGravity: 9.80511
   imuRPYWeight: 0.01
 
   # Extrinsics (lidar -> IMU)
-  extrinsicTrans: [9.29e-02, 1.173e-01, -7.6e-02]
-  extrinsicRot: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
+  extrinsicTrans: [-0.11080622, -0.61221749, -0.31189268]
+  extrinsicRot: [0.04841500, -0.998772, 0.01046200, -0.01865040, -0.011376, -0.999761, 0.99865300, 0.04820920, -0.01917830]
   # extrinsicRRY: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
 
   # extrinsicRot: [1, 0, 0,

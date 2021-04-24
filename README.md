@@ -1,5 +1,16 @@
 # LIO-SAM
+# IMU noise
+IMU.NoiseGyro: 0.05 
+IMU.NoiseAcc: 0.2
+IMU.GyroWalk: 4.0e-5
+IMU.AccWalk: 0.02
+IMU.Frequency: 400
 
+0.04841500   	-0.99877200   	0.01046200   	-0.11080622   
+-0.01865040   	-0.01137640   	-0.99976100   	-0.61221749   
+0.99865300   	0.04820920   	-0.01917830   	-0.31189268   
+0.00000000   	0.00000000   	0.00000000   	1.00000000 
+         
 **A real-time lidar-inertial odometry package. We strongly recommend the users read this document thoroughly and test the package with the provided dataset first. A video of the demonstration of the method can be found on [YouTube](https://www.youtube.com/watch?v=A0H8CoORZJU).**
 
 <p align='center'>
