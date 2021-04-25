@@ -6,10 +6,10 @@ IMU.GyroWalk: 4.0e-5
 IMU.AccWalk: 0.02
 IMU.Frequency: 400
 
-0.04841500   	-0.99877200   	0.01046200   	-0.11080622   
--0.01865040   	-0.01137640   	-0.99976100   	-0.61221749   
-0.99865300   	0.04820920   	-0.01917830   	-0.31189268   
-0.00000000   	0.00000000   	0.00000000   	1.00000000 
+[0.010462, -0.0484158,   0.998772,  0.0672666,
+        -0.999761,  0.0186504,  0.0113764,  0.0267812,
+         -0.0191783, -0.998653, -0.0482092, 0.00182583,
+         0.0, 0.0, 0.0, 1.0] 
          
 **A real-time lidar-inertial odometry package. We strongly recommend the users read this document thoroughly and test the package with the provided dataset first. A video of the demonstration of the method can be found on [YouTube](https://www.youtube.com/watch?v=A0H8CoORZJU).**
 

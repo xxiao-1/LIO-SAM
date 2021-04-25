@@ -13,7 +13,7 @@ lio_sam:
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # chassis Settings
-  useChassis: false
+  useChassis: true
 
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
@@ -34,8 +34,8 @@ lio_sam:
   imuRPYWeight: 0.01
 
   # Extrinsics (lidar -> IMU)
-  extrinsicTrans: [-0.11080622, -0.61221749, -0.31189268]
-  extrinsicRot: [0.04841500, -0.998772, 0.01046200, -0.01865040, -0.011376, -0.999761, 0.99865300, 0.04820920, -0.01917830]
+  extrinsicTrans: [0.61221749,0.31189268,-0.11080622]
+  extrinsicRot: [0.9988, 0.0114, -0.0482, -0.0105, 0.9998, 0.0192, 0.0484, -0.0187,0.9987]
   # extrinsicRRY: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
 
   # extrinsicRot: [1, 0, 0,
