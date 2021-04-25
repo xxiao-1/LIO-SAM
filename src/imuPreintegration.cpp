@@ -519,7 +519,7 @@ public:
         prevPose_ = result.at<gtsam::Pose3>(X(key));
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
-        std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
+        // std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
