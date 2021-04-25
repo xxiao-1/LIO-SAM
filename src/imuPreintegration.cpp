@@ -343,12 +343,27 @@ public:
                 } else
                     break;
             }
+
+            // pop old chassis message
+            while (!chaQueOpt.empty()) {
+                if (ROS_TIME(&chaQueOpt.front()) < currentCorrectionTime - delta_t) {
+                    lastChassisT_opt = ROS_TIME(&chaQueOpt.front());
+                    chaQueOpt.pop_front();
+                } else
+                    break;
+            }
+
             // initial pose
             prevPose_ = lidarPose.compose(lidar2Imu);
             gtsam::PriorFactor <gtsam::Pose3> priorPose(X(0), prevPose_, priorPoseNoise);
             graphFactors.add(priorPose);
             // initial velocity
             prevVel_ = gtsam::Vector3(0, 0, 0);
+            gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
+            graphFactors.add(priorVel);
+            // use chassis to init
+            DynamicMeasurement *thisChassisInit = &chaQueOpt.front();
+            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);//TODO change axis
             gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
             graphFactors.add(priorVel);
             // initial bias

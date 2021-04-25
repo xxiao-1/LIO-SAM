@@ -1663,6 +1663,7 @@ public:
         static Eigen::Affine3f increOdomAffine; // incremental odometry in affine
         if (lastIncreOdomPubFlag == false)
         {
+            // 给初值
             lastIncreOdomPubFlag = true;
             laserOdomIncremental = laserOdometryROS;
             increOdomAffine = trans2Affine3f(transformTobeMapped);
