@@ -346,8 +346,8 @@ public:
 
             // pop old chassis message
             while (!chaQueOpt.empty()) {
-                if (ROS_TIME(&chaQueOpt.front()) < currentCorrectionTime - delta_t) {
-                    lastChassisT_opt = ROS_TIME(&chaQueOpt.front());
+                if (chaQueOpt.front().time < currentCorrectionTime - delta_t) {
+                    lastChassisT_opt = chaQueOpt.front().time;
                     chaQueOpt.pop_front();
                 } else
                     break;
@@ -362,10 +362,10 @@ public:
             gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
             graphFactors.add(priorVel);
             // use chassis to init
-            DynamicMeasurement *thisChassisInit = &chaQueOpt.front();
-            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);//TODO change axis
-            gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
-            graphFactors.add(priorVel);
+//            DynamicMeasurement *thisChassisInit = &chaQueOpt.front();
+//            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);//TODO change axis
+//            gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
+//            graphFactors.add(priorVel);
             // initial bias
             prevBias_ = gtsam::imuBias::ConstantBias();
             gtsam::PriorFactor <gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
@@ -487,21 +487,12 @@ public:
         graphValues.insert(V(key), propState_.v());
         graphValues.insert(B(key), prevBias_);
 
-
-        //add chassis factor 1
-//        noiseModel::Diagonal::shared_ptr chassisNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
-//        gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
-//        gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
-//        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
-//        (Qi*delta_p)
-//        gtSAMgraph.add(BetweenFactor<Pose3>(X(key-1), X(key), poseFrom.between(poseTo), chassisNoise));
-
-        // add chassis factor 2
+        // add chassis factor
         if (useChassis) {
             gtsam::Pose3 poseFrom = prevPose_;
             Eigen::Vector3d Pi = poseFrom.translation();
             Eigen::Quaterniond Qi = poseFrom.rotation().toQuaternion();
-            Eigen::Vector3d delta_p = chassisIntegratorOpt_.getDeltaP();
+            Eigen::Vector3d delta_p = chassisIntegratorOpt_.getDeltaP();// TODO add
             Eigen::Quaterniond delta_q = chassisIntegratorOpt_.getDeltaQ();
             Eigen::Matrix<double, 6, 6> chassisCovariance = chassisIntegratorOpt_.getCovariance();
             float transformChassis[3];

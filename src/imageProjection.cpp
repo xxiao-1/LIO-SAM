@@ -44,7 +44,7 @@ private:
 
     ros::Subscriber subLaserCloud;
     ros::Publisher  pubLaserCloud;
-    
+
     ros::Publisher pubExtractedCloud;
     ros::Publisher pubLaserCloudInfo;
 
@@ -56,6 +56,9 @@ private:
 
     std::deque<sensor_msgs::PointCloud2> cloudQueue;
     sensor_msgs::PointCloud2 currentCloudMsg;
+
+    ros::Subscriber subGTOdom;
+    ofstream myfile;
 
     double *imuTime = new double[queueLength];
     double *imuRotX = new double[queueLength];
@@ -89,6 +92,7 @@ public:
     ImageProjection():
     deskewFlag(0)
     {
+        //subGTOdom     = nh.subscribe("gps/odom", 1000, &ImageProjection::gtOdomHandler, this, ros::TransportHints().tcpNoDelay());
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom       = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental", 2000, &ImageProjection::odometryHandler, this, ros::TransportHints().tcpNoDelay());
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
@@ -142,6 +146,25 @@ public:
 
     ~ImageProjection(){}
 
+    void gtOdomHandler(const nav_msgs::Odometry::ConstPtr& msg){
+
+        myfile.open("/home/xxiao/data/gt.txt", ios::app); //lego
+        myfile.precision(10);
+        double roll, pitch, yaw;
+        tf::Quaternion orientation;
+        tf::quaternionMsgToTF(msg->pose.pose.orientation, orientation);
+        tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
+        roll = roll*180 /M_PI;
+        pitch = pitch*180 /M_PI;
+        yaw = yaw*180 /M_PI;
+        ROS_DEBUG("odom success");
+
+        myfile<< msg-> header.stamp<<" ";
+        myfile <<msg->pose.pose.position.x<< " " <<msg->pose.pose.position.y<< " "<<msg->pose.pose.position.z;
+        myfile <<" " << msg->pose.pose.orientation.x << " " << msg->pose.pose.orientation.y << " " << msg->pose.pose.orientation.z<<" "<<msg->pose.pose.orientation.w ;
+        myfile<< "\n";
+        myfile.close();
+    }
     void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg)
     {
         sensor_msgs::Imu thisImu = imuConverter(*imuMsg);
@@ -584,7 +607,7 @@ public:
             cloudInfo.endRingIndex[i] = count -1 - 5;
         }
     }
-    
+
     void publishClouds()
     {
         cloudInfo.header = cloudHeader;
@@ -598,11 +621,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "lio_sam");
 
     ImageProjection IP;
-    
     ROS_INFO("\033[1;32m----> Image Projection Started.\033[0m");
 
     ros::MultiThreadedSpinner spinner(3);
     spinner.spin();
-    
-    return 0;
+     return 0;
 }
