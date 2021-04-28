@@ -450,7 +450,7 @@ public:
                 double chaTime = thisChassis->time;
                 if (chaTime < currentCorrectionTime - delta_t) {
                     double dt = (lastChassisT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChassisT_opt);
-                    chassisIntegratorOpt_.push_back(dt, thisChassis->velocity, thisChassis->angle);
+                    chassisIntegratorOpt_.push_back(dt, thisChassis->velocity, thisChassis->angle);//TODO angel换成imu
                     lastChassisT_opt = chaTime;
                     chaQueOpt.pop_front();
                     flag = true;
@@ -503,10 +503,14 @@ public:
             gtsam::Pose3 poseTo = gtsam::Pose3(gtsam::Rot3(Qj),
                                                gtsam::Point3(transformChassis[0], transformChassis[1],
                                                              transformChassis[2]));
+            gtsam::Point3(transformChassis[0], transformChassis[1],transformChassis[2]);
             gtsam::noiseModel::Diagonal::shared_ptr chassisNoise1 = gtsam::noiseModel::Diagonal::Variances(
                     (gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
             gtsam::SharedNoiseModel chassisNoise2 =
                     gtsam::noiseModel::Gaussian::Covariance(chassisCovariance);
+            const bool ADD_POSE_BETWEEN=true;
+            const bool ADD_POINT_BETWEEN=true;
+
             graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
             gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);

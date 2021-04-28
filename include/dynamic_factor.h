@@ -104,7 +104,6 @@ namespace gtsam {
             delta_q = result_delta_q;
             delta_v = result_delta_v;
             delta_q.normalize();
-            sum_dt += dt;
         }
 
         void showDelt() {

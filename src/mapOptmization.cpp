@@ -164,7 +164,7 @@ public:
 
         pubKeyPoses                 = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/trajectory", 1);
         pubLaserCloudSurround       = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/map_global", 1);
-        pubLaserOdometryGlobal      = nh.advertise<nav_msgs::Odometry> ("lio_sam/mapping/odometry", 1);
+        pubLaserOdometryGlobal      = nh.advertise<nav_msgs::Odometry> ("lio_sam/mapping/odometry", 1); // transformToBeMapped
         pubLaserOdometryIncremental = nh.advertise<nav_msgs::Odometry> ("lio_sam/mapping/odometry_incremental", 1);
         pubPath                     = nh.advertise<nav_msgs::Path>("lio_sam/mapping/path", 1);
 
@@ -257,13 +257,13 @@ public:
 
             downsampleCurrentScan();
 
-            scan2MapOptimization();
+            scan2MapOptimization();// lidar odometry
 
-            saveKeyFramesAndFactor();
+            saveKeyFramesAndFactor(); //添加odom gps loop因子, update pose6D transformToBeMapped
 
-            correctPoses();
+            correctPoses();// 回环 update pose6D,not update transformToBeMapped
 
-            publishOdometry();
+            publishOdometry(); //transformToBeMapped
 
             publishFrames();
         }
