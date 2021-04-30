@@ -21,6 +21,7 @@ using namespace gtsam;
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
+using gtsam::symbol_shorthand::I; // steerAngle ratio  (i)
 
 class TransformFusion : public ParamServer {
 public:
@@ -192,6 +193,7 @@ public:
     gtsam::NavState prevStateOdom;
     gtsam::imuBias::ConstantBias prevBiasOdom;
 
+    int steerAngleRatio = 17.4;
     bool doneFirstOpt = false;
     double lastImuT_imu = -1;
     double lastImuT_opt = -1;
