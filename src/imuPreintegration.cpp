@@ -302,11 +302,30 @@ public:
         vx = vel * cos(beta);
         rz = vel * steer / i0 / len / (1 - K * vel * vel);
         chassis_out.velocity = {vx, vy, vz};
-        //!correct slide
         //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
         chassis_out.angle = {rx, ry, rz};
         //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
-        //ROS_INFO("chassis angular_vel is %f,%f,%f",roll,pitch,yaw);//right,front,yaw
+        ROS_INFO("chassis angular_vel is %f,%f,%f",rx,ry,rz);//right,front,yaw
+        // use imu angle velocity 插值吗
+        if(!imuQueImu.empty()){
+            double ratio1=0;
+            double ratio2=0;
+            double imu_rx = 0, imu_ry = 0, imu_rz = 0;
+            for (int i = 0; i < (int) imuQueImu.size()-1; ++i) {
+                sensor_msgs::Imu *thisImuBefore = &imuQueImu[i];
+                sensor_msgs::Imu *thisImuAfter = &imuQueImu[i+1];
+                double imuTimeBefore = ROS_TIME(thisImuBefore);
+                double imuTimeAfter = ROS_TIME(thisImuAfter);
+                if(imuTimeBefore<=t && imuTimeAfter >=t){
+                    ratio2=(t-imuTimeBefore)/(imuTimeAfter-imuTimeBefore);
+                    ratio1=(imuTimeAfter-t)/(imuTimeAfter-imuTimeBefore);
+                    imu_rx=ratio1*(thisImuBefore->angular_velocity.x)+ratio2*(thisImuAfter->angular_velocity.x);
+                    imu_ry=ratio1*(thisImuBefore->angular_velocity.y)+ratio2*(thisImuAfter->angular_velocity.y);
+                    imu_rz=ratio1*(thisImuBefore->angular_velocity.z)+ratio2*(thisImuAfter->angular_velocity.z);
+                }
+            }
+            ROS_INFO("imu angular_vel is %f,%f,%f",imu_rx,imu_ry,imu_rz);//right,front,yaw
+        }
         return chassis_out;
 
     }

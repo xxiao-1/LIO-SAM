@@ -55,10 +55,7 @@ namespace gtsam {
             Vector3d result_delta_v;
             Vector3d result_linearized_ba;
             Vector3d result_linearized_bg;
-
-//            dynamics_Integration(_dt, vel0, omiga0, delta_p, delta_q, delta_v,
-//                                 result_delta_p, result_delta_q, result_delta_v, 1);
-//            ROS_INFO("midpoint integration");
+            // TODO 输入此时的角速度
             Vector3d un_vel0 = delta_q * _vel0;
             result_delta_q = delta_q * Quaterniond(1, _omiga0(0) * _dt / 2, _omiga0(1) * _dt / 2, _omiga0(2) * _dt / 2);
             result_delta_p = delta_p + un_vel0 *_dt;
@@ -79,14 +76,6 @@ namespace gtsam {
 
 
                 MatrixXd F = MatrixXd::Zero(6, 6);
-//                F.block<3, 3>(0, 0) = Matrix3d::Identity();
-//                F.block<3, 3>(0, 3) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
-//                F.block<3, 3>(3, 3) = Matrix3d::Identity() - R_w_x * _dt;
-//
-//                MatrixXd V = MatrixXd::Zero(6, 6);
-//                V.block<3, 3>(0, 0) = delta_q.toRotationMatrix() * _dt;
-//                V.block<3, 3>(3, 3) = MatrixXd::Identity(3, 3) * _dt;
-
                 F.block<3, 3>(3, 3) = Matrix3d::Identity();
                 F.block<3, 3>(3, 0) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
                 F.block<3, 3>(0, 0) = Matrix3d::Identity() - R_w_x * _dt;
