@@ -21,7 +21,7 @@ using namespace gtsam;
 using gtsam::symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
 using gtsam::symbol_shorthand::V; // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::B; // Bias  (ax,ay,az,gx,gy,gz)
-using gtsam::symbol_shorthand::I; // steerAngle ratio  (i)
+using gtsam::symbol_shorthand::K; // steerAngle ratio  (k)
 
 class TransformFusion : public ParamServer {
 public:
@@ -205,6 +205,7 @@ public:
 
     const double delta_t = 0;
     double tmp_imu_ang_x=0,tmp_imu_ang_y=0,tmp_imu_ang_z=0;
+    double tmp_imu_ang_time=0;
     int key = 1;
 
     gtsam::Pose3 imu2Lidar = gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
@@ -281,7 +282,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel1(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+//        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double vel = 0, vx = 0, vy = 0, vz = 0;
         double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
         double beta;
@@ -304,33 +305,12 @@ public:
         rz = vel * steer / i0 / len / (1 - K * vel * vel);
         chassis_out.velocity = {vx, vy, vz};
         //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
-        chassis_out.angle = {rx, ry, rz};
+        //chassis_out.angle = {rx, ry, rz};
         //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
-        ROS_INFO("chassis angular_vel is %f,%f,%f",rx,ry,rz);//right,front,yaw
-        // use imu angle velocity 插值吗
-        if(!imuQueImu.empty()){
-            double ratio1=0;
-            double ratio2=0;
-            double imu_rx = 0, imu_ry = 0, imu_rz = 0;
-            for (int i = 0; i < (int) imuQueImu.size()-1; ++i) {
-                sensor_msgs::Imu *thisImuBefore = &imuQueImu[i];
-                sensor_msgs::Imu *thisImuAfter = &imuQueImu[i+1];
-                double imuTimeBefore = ROS_TIME(thisImuBefore);
-                double imuTimeAfter = ROS_TIME(thisImuAfter);
-                if(imuTimeBefore<=t && imuTimeAfter >=t){
-                    ratio2=(t-imuTimeBefore)/(imuTimeAfter-imuTimeBefore);
-                    ratio1=(imuTimeAfter-t)/(imuTimeAfter-imuTimeBefore);
-                    imu_rx=ratio1*(thisImuBefore->angular_velocity.x)+ratio2*(thisImuAfter->angular_velocity.x);
-                    imu_ry=ratio1*(thisImuBefore->angular_velocity.y)+ratio2*(thisImuAfter->angular_velocity.y);
-                    imu_rz=ratio1*(thisImuBefore->angular_velocity.z)+ratio2*(thisImuAfter->angular_velocity.z);
-
-                }
-            }
-            ROS_INFO("imu angular_vel is %f,%f,%f", tmp_imu_ang_x,tmp_imu_ang_y,tmp_imu_ang_z);//right,front,yaw
-
-        }
+//        ROS_INFO("chassis angular_vel is %f,%f,%f",rx,ry,rz);//right,front,yaw
+        // use latest imu angle velocity (imu msg time - chassis msg time = -0.003825s)
+        chassis_out.angle = {tmp_imu_ang_x, tmp_imu_ang_y, tmp_imu_ang_z};
         return chassis_out;
-
     }
 
     void odometryHandler(const nav_msgs::Odometry::ConstPtr &odomMsg) {
@@ -350,7 +330,6 @@ public:
         float r_z = odomMsg->pose.pose.orientation.z;
         float r_w = odomMsg->pose.pose.orientation.w;
         bool degenerate = (int) odomMsg->pose.covariance[0] == 1 ? true : false;
-        std::cout<<"degenerate="<<degenerate<<std::endl;
         gtsam::Pose3 lidarPose = gtsam::Pose3(gtsam::Rot3::Quaternion(r_w, r_x, r_y, r_z),
                                               gtsam::Point3(p_x, p_y, p_z));
 
@@ -387,7 +366,7 @@ public:
             graphFactors.add(priorVel);
             // use chassis to init
 //            DynamicMeasurement *thisChassisInit = &chaQueOpt.front();
-//            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);//TODO change axis
+//            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);
 //            gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
 //            graphFactors.add(priorVel);
             // initial bias
@@ -502,7 +481,7 @@ public:
         gtsam::Pose3 curPose = lidarPose.compose(lidar2Imu);
         gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, degenerate ? correctionNoise2 : correctionNoise);
         // mock lidar not good
- //       gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, correctionNoise3);
+        // gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, correctionNoise3);
         graphFactors.add(pose_factor);
 
         // insert predicted values
@@ -524,7 +503,7 @@ public:
                 transformChassis[i] = Pi[i] + delta_p[i];
             }
             Eigen::Quaterniond Qj = delta_q * Qi;
-            gtsam::Pose3 poseTo = gtsam::Pose3(gtsam::Rot3(Qj),
+            gtsam::Pose3 poseTo = gtsam::Pose3(propState_.pose().rotation(),
                                                gtsam::Point3(transformChassis[0], transformChassis[1],
                                                              transformChassis[2]));
             gtsam::Point3(transformChassis[0], transformChassis[1],transformChassis[2]);
@@ -532,13 +511,12 @@ public:
                     (gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
             gtsam::SharedNoiseModel chassisNoise2 =
                     gtsam::noiseModel::Gaussian::Covariance(chassisCovariance);
-            const bool ADD_POSE_BETWEEN=true;
-            const bool ADD_POINT_BETWEEN=true;
 
+//            graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
             graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
             gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);
-            // 我发现了 insert.value的值是imu的预测值，如果imu不准，岂不是惨兮兮
+            // value: initial value before optimization
             std::cout << "add chassis factor" << std::endl;
         }
 
@@ -593,7 +571,7 @@ public:
             lastImuQT = ROS_TIME(&imuQueImu.front());
             imuQueImu.pop_front();
         }
-        // repropogate
+        // repropogate imuIntegratorImu_利用imuQueImu中的imu信息重新积分
         if (!imuQueImu.empty()) {
             // reset bias use the newly optimized bias
             imuIntegratorImu_->resetIntegrationAndSetBias(prevBiasOdom);
@@ -636,7 +614,11 @@ public:
     void imuHandler(const sensor_msgs::Imu::ConstPtr &imu_raw) {
         std::lock_guard <std::mutex> lock(mtx);
 
-        sensor_msgs::Imu thisImu = imuConverter(*imu_raw);
+        sensor_msgs::Imu thisImu = imuConverter(*imu_raw); //旋转变换 将imu坐标系转到lidar坐标系
+
+        tmp_imu_ang_x=thisImu.angular_velocity.x;
+        tmp_imu_ang_y=thisImu.angular_velocity.y;
+        tmp_imu_ang_z=thisImu.angular_velocity.z;
 
         imuQueOpt.push_back(thisImu);
         imuQueImu.push_back(thisImu);
@@ -647,16 +629,11 @@ public:
         double imuTime = ROS_TIME(&thisImu);
         double dt = (lastImuT_imu < 0) ? (1.0 / 500.0) : (imuTime - lastImuT_imu);
         lastImuT_imu = imuTime;
-        // ROS_INFO("--imu vel is %f,%f,%f", thisImu.linear_acceleration.x, thisImu.linear_acceleration.y, thisImu.linear_acceleration.z);
-        // ROS_INFO("--imu angular_velocity is %f,%f,%f", thisImu.angular_velocity.x, thisImu.angular_velocity.y, thisImu.angular_velocity.z);
-        // integrate this single imu message
+         // integrate this single imu message
         imuIntegratorImu_->integrateMeasurement(
                 gtsam::Vector3(thisImu.linear_acceleration.x, thisImu.linear_acceleration.y,
                                thisImu.linear_acceleration.z),
                 gtsam::Vector3(thisImu.angular_velocity.x, thisImu.angular_velocity.y, thisImu.angular_velocity.z), dt);
-        tmp_imu_ang_x=thisImu.angular_velocity.x;
-        tmp_imu_ang_y=thisImu.angular_velocity.y;
-        tmp_imu_ang_z=thisImu.angular_velocity.z;
         // predict odometry
         gtsam::NavState currentState = imuIntegratorImu_->predict(prevStateOdom, prevBiasOdom);
 
@@ -666,9 +643,9 @@ public:
         odometry.header.frame_id = odometryFrame;
         odometry.child_frame_id = "odom_imu";
 
-        // transform imu pose to ldiar
+        // transform imu pose to lidar
         gtsam::Pose3 imuPose = gtsam::Pose3(currentState.quaternion(), currentState.position());
-        gtsam::Pose3 lidarPose = imuPose.compose(imu2Lidar);
+        gtsam::Pose3 lidarPose = imuPose.compose(imu2Lidar); //平移变换
 
         odometry.pose.pose.position.x = lidarPose.translation().x();
         odometry.pose.pose.position.y = lidarPose.translation().y();

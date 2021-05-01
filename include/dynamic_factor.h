@@ -76,9 +76,9 @@ namespace gtsam {
 
 
                 MatrixXd F = MatrixXd::Zero(6, 6);
-                F.block<3, 3>(3, 3) = Matrix3d::Identity();
-                F.block<3, 3>(3, 0) = -delta_q.toRotationMatrix()*R_v_0_x *_dt;
-                F.block<3, 3>(0, 0) = Matrix3d::Identity() - R_w_x * _dt;
+                F.block<3, 3>(3, 0) = Matrix3d::Identity();
+                F.block<3, 3>(3, 3) = delta_q.toRotationMatrix()*R_v_0_x *_dt;
+                F.block<3, 3>(0, 3) = Matrix3d::Identity() - R_w_x * _dt;
 
                 MatrixXd V = MatrixXd::Zero(6, 6);
                 V.block<3, 3>(3 ,3) = delta_q.toRotationMatrix() * _dt;
