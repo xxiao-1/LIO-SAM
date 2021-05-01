@@ -42,6 +42,7 @@ public:
 
     double lidarOdomTime = -1;
 
+
     deque <nav_msgs::Odometry> imuOdomQueue;
 
     TransformFusion() {
@@ -203,7 +204,7 @@ public:
     gtsam::Values graphValues;
 
     const double delta_t = 0;
-
+    double tmp_imu_ang_x=0,tmp_imu_ang_y=0,tmp_imu_ang_z=0;
     int key = 1;
 
     gtsam::Pose3 imu2Lidar = gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
@@ -322,9 +323,11 @@ public:
                     imu_rx=ratio1*(thisImuBefore->angular_velocity.x)+ratio2*(thisImuAfter->angular_velocity.x);
                     imu_ry=ratio1*(thisImuBefore->angular_velocity.y)+ratio2*(thisImuAfter->angular_velocity.y);
                     imu_rz=ratio1*(thisImuBefore->angular_velocity.z)+ratio2*(thisImuAfter->angular_velocity.z);
+
                 }
             }
-            ROS_INFO("imu angular_vel is %f,%f,%f",imu_rx,imu_ry,imu_rz);//right,front,yaw
+            ROS_INFO("imu angular_vel is %f,%f,%f", tmp_imu_ang_x,tmp_imu_ang_y,tmp_imu_ang_z);//right,front,yaw
+
         }
         return chassis_out;
 
@@ -651,7 +654,9 @@ public:
                 gtsam::Vector3(thisImu.linear_acceleration.x, thisImu.linear_acceleration.y,
                                thisImu.linear_acceleration.z),
                 gtsam::Vector3(thisImu.angular_velocity.x, thisImu.angular_velocity.y, thisImu.angular_velocity.z), dt);
-
+        tmp_imu_ang_x=thisImu.angular_velocity.x;
+        tmp_imu_ang_y=thisImu.angular_velocity.y;
+        tmp_imu_ang_z=thisImu.angular_velocity.z;
         // predict odometry
         gtsam::NavState currentState = imuIntegratorImu_->predict(prevStateOdom, prevBiasOdom);
 
