@@ -175,6 +175,7 @@ public:
     gtsam::noiseModel::Diagonal::shared_ptr correctionNoise2;
     gtsam::noiseModel::Diagonal::shared_ptr correctionNoise3;
     gtsam::Vector noiseModelBetweenBias;
+    gtsam::noiseModel::Diagonal::shared_ptr chassisVelNoise;
 
 
     gtsam::PreintegratedImuMeasurements *imuIntegratorOpt_;
@@ -206,6 +207,7 @@ public:
     const double delta_t = 0;
     double tmp_imu_ang_x=0,tmp_imu_ang_y=0,tmp_imu_ang_z=0;
     double tmp_imu_ang_time=0;
+    double vel = 0, vx = 0, vy = 0, vz = 0;
     int key = 1;
 
     gtsam::Pose3 imu2Lidar = gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0),
@@ -237,6 +239,7 @@ public:
         priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2).finished()); // rad,rad,rad,m, m, m
         priorVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1e4); // m/s
+        chassisVelNoise = gtsam::noiseModel::Isotropic::Sigma(0.5, 1e4); // m/s
         priorBiasNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1e-3); // 1e-2 ~ 1e-3 seems to be good
         correctionNoise = gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << 0.05, 0.05, 0.05, 0.1, 0.1, 0.1).finished()); // rad,rad,rad,m, m, m
@@ -283,8 +286,7 @@ public:
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
 //        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
-        double vel = 0, vx = 0, vy = 0, vz = 0;
-        double steer = 0, rx = 0, ry = 0, rz = 0, bias = 0;
+        double steer = 0, bias = 0;
         double beta;
         const double k1 = 30082 * 2;//front tyre
         const double k2 = 31888 * 2;//rear tyre
@@ -514,8 +516,12 @@ public:
 
 //            graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
             graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
-            gtsam::PriorFactor <gtsam::Pose3> cha_pose_factor(X(key), poseTo, correctionNoise2);
             graphFactors.add(cha_pose_factor);
+
+            // add chassis velocity factor
+            gtsam::Vector3 chassisVel(vx,vy,vz);
+            gtsam::PriorFactor <gtsam::Vector3> chassisVel(V(key), chassisVel, chassisVelNoise);
+            graphFactors.add(chassisVel);
             // value: initial value before optimization
             std::cout << "add chassis factor" << std::endl;
         }
