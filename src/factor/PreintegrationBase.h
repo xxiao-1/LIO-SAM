@@ -9,21 +9,13 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- *  @file  PreintegrationBase.h
- *  @author Luca Carlone
- *  @author Stephen Williams
- *  @author Richard Roberts
- *  @author Vadim Indelman
- *  @author David Jensen
- *  @author Frank Dellaert
- **/
+
 
 #pragma once
 
-#include <gtsam/navigation/PreintegrationParams.h>
-#include <gtsam/navigation/NavState.h>
-#include <gtsam/navigation/ImuBias.h>
+#include "PreintegrationParams.h"
+#include "ChaNavState.h"
+#include "ChaBias.h"
 #include <gtsam/linear/NoiseModel.h>
 
 #include <iosfwd>
@@ -40,7 +32,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT PreintegrationBase {
  public:
-  typedef imuBias::ConstantBias Bias;
+  typedef chaBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
  protected:
@@ -68,7 +60,7 @@ class GTSAM_EXPORT PreintegrationBase {
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
   PreintegrationBase(const boost::shared_ptr<Params>& p,
-      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
+      const chaBias::ConstantBias& biasHat = chaBias::ConstantBias());
 
   /// @}
 
@@ -101,13 +93,12 @@ class GTSAM_EXPORT PreintegrationBase {
 
   /// @name Instance variables access
   /// @{
-  const imuBias::ConstantBias& biasHat() const { return biasHat_; }
+  const chaBias::ConstantBias& biasHat() const { return biasHat_; }
   double deltaTij() const { return deltaTij_; }
 
   virtual Vector3  deltaPij() const = 0;
-  virtual Vector3  deltaVij() const = 0;
   virtual Rot3     deltaRij() const = 0;
-  virtual NavState deltaXij() const = 0;
+  virtual ChaNavState deltaXij() const = 0;
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
@@ -145,19 +136,19 @@ class GTSAM_EXPORT PreintegrationBase {
   virtual void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt);
 
-  /// Given the estimate of the bias, return a NavState tangent vector
+  /// Given the estimate of the bias, return a ChaNavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
-  virtual Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const = 0;
+  virtual Vector6 biasCorrectedDelta(const chaBias::ConstantBias& bias_i,
+      OptionalJacobian<6, 6> H = boost::none) const = 0;
 
   /// Predict state at time j
-  NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
-                   OptionalJacobian<9, 9> H1 = boost::none,
-                   OptionalJacobian<9, 6> H2 = boost::none) const;
+  ChaNavState predict(const ChaNavState& state_i, const chaBias::ConstantBias& bias_i, const Vector3 vel_i,
+                   OptionalJacobian<6, 6> H1 = boost::none,
+                   OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// Calculate error given navStates
-  Vector9 computeError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,
+  Vector9 computeError(const ChaNavState& state_i, const ChaNavState& state_j,
+                       const chaBias::ConstantBias& bias_i, const Vector3 vel_i,
                        OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
                        OptionalJacobian<9, 6> H3) const;
 
@@ -165,12 +156,10 @@ class GTSAM_EXPORT PreintegrationBase {
    * Compute errors w.r.t. preintegrated measurements and jacobians
    * wrt pose_i, vel_i, bias_i, pose_j, bias_j
    */
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1 =
-          boost::none, OptionalJacobian<9, 3> H2 = boost::none,
-      OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
-          boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
+  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Pose3& pose_j,
+      const chaBias::ConstantBias& bias_i, const Vector3 vel_i, OptionalJacobian<6, 6> H1 =
+      OptionalJacobian<6, 6> H2 = boost::none, OptionalJacobian<6, 6> H3 =
+          boost::none) const;
 
  private:
   /** Serialization function */

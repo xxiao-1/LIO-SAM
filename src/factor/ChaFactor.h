@@ -96,11 +96,6 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-  /// Merge in a different set of measurements and update bias derivatives accordingly
-  void mergeWith(const PreintegratedImuMeasurements& pim, Matrix9* H1, Matrix9* H2);
-#endif
-
  private:
   /// Serialization function
   friend class boost::serialization::access;

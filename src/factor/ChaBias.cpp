@@ -9,14 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file ImuBias.cpp
- * @date  Feb 2, 2012
- * @author Vadim Indelman, Stephen Williams
- */
-
 #include "ChaBias.h"
-
 #include <gtsam/geometry/Point3.h>
 #include <iostream>
 

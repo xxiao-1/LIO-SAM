@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <gtsam/navigation/NavState.h>
-#include <gtsam/navigation/PreintegrationBase.h>
 #include "ChaNavState.h"
+#include "PreintegrationBase.h"
+
 namespace gtsam {
 
 /**
@@ -78,7 +78,7 @@ void update(const Vector3& measuredVel, const Vector3& measuredOmega, const doub
 /// Given the estimate of the bias, return a NavState tangent vector
 /// summarizing the preintegrated IMU measurements so far
 /// NOTE(frank): implementation is different in two versions
-Vector9 biasCorrectedDelta(const chaBias::ConstantBias& bias_i,
+Vector6 biasCorrectedDelta(const chaBias::ConstantBias& bias_i,
                            OptionalJacobian<6, 6> H = boost::none) const override;
 
 /** Dummy clone for MATLAB */

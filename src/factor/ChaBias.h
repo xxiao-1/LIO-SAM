@@ -9,11 +9,6 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file ImuBias.h
- * @date  Feb 2, 2012
- * @author Vadim Indelman, Stephen Williams
- */
 
 #pragma once
 
@@ -69,14 +64,8 @@ namespace gtsam {
                 Vector3 correctWheelSpeed(const Vector3& measurement,
                 OptionalJacobian<3, 6> H1 = boost::none,
                 OptionalJacobian<3, 3> H2 = boost::none) const {
-                    Matrix3 r_v;
-                    r_v << measurement(0), 0, 0,
-                            0, measurement(1), 0,
-                            0, 0, measurement(2);
-                    if (H1) (*H1) << R_w_x, Z_3x3;
-                    if (H2) (*H2) << 1+biasVel_(0), 0, 0,
-                                     0, 1+biasVel_(1), 0,
-                                     0, 0, 1+biasVel_(2);
+                    if (H1) (*H1) << measurement.asDiagonal(), Z_3x3;
+                    if (H2) (*H2) << I_3x3+biasVel_.asDiagonal();
                     Vector3 tmp=measurement.array()*biasVel_.array();
                     return measurement + tmp ;
                 }

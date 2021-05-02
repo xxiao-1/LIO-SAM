@@ -9,16 +9,6 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- *  @file  PreintegratedRotation.h
- *  @author Luca Carlone
- *  @author Stephen Williams
- *  @author Richard Roberts
- *  @author Vadim Indelman
- *  @author David Jensen
- *  @author Frank Dellaert
- **/
-
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>

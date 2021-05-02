@@ -177,7 +177,7 @@ ChaNavState ChaNavState::update(const Vector3& b_velocity, const Vector3& b_omeg
 //  const Vector3 omega_cross_vel = omega.cross(n_v);
 //
 //  // Get perturbations in nav frame
-//  Vector9 n_xi, xi;
+//  Vector6 n_xi, xi;
 //  Matrix3 D_dR_R, D_dP_R, D_dV_R, D_body_nav;
 //  dR(n_xi) << ((-dt) * omega);
 //  dP(n_xi) << ((-dt2) * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
@@ -213,15 +213,15 @@ ChaNavState ChaNavState::update(const Vector3& b_velocity, const Vector3& b_omeg
 //}
 
 //------------------------------------------------------------------------------得到重力向量后的修正no need
-//Vector9 NavState::correctPIM(const Vector9& pim, double dt,
+//Vector6 NavState::correctPIM(const Vector6& pim, double dt,
 //    const Vector3& n_gravity, const boost::optional<Vector3>& omegaCoriolis,
-//    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-//    OptionalJacobian<9, 9> H2) const {
+//    bool use2ndOrderCoriolis, OptionalJacobian<6, 6> H1,
+//    OptionalJacobian<6, 6> H2) const {
 //  const Rot3& nRb = R_;
 //  const Velocity3& n_v = v_; // derivative is Ri !
 //  const double dt22 = 0.5 * dt * dt;
 //
-//  Vector9 xi;
+//  Vector6 xi;
 //  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
 //  dR(xi) = dR(pim);
 //  dP(xi) = dP(pim)

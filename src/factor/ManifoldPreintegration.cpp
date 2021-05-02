@@ -9,16 +9,6 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- *  @file  ManifoldPreintegration.cpp
- *  @author Luca Carlone
- *  @author Stephen Williams
- *  @author Richard Roberts
- *  @author Vadim Indelman
- *  @author David Jensen
- *  @author Frank Dellaert
- **/
-
 #include "ManifoldPreintegration.h"
 
 using namespace std;
@@ -106,7 +96,7 @@ namespace gtsam {
     }
 
 //------------------------------------------------------------------------------
-    Vector9 ManifoldPreintegration::biasCorrectedDelta(
+    Vector6 ManifoldPreintegration::biasCorrectedDelta(
             const chaBias::ConstantBias& bias_i, OptionalJacobian<6, 6> H) const {
         // Correct deltaRij, derivative is delRdelBiasOmega_
         const chaBias::ConstantBias biasIncr = bias_i - biasHat_;
@@ -121,14 +111,14 @@ namespace gtsam {
         Matrix3 D_dR_correctedRij;
         // TODO(frank): could line below be simplified? It is equivalent to
         //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
-        v.segment<3>(0) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0); //R
-        v.segment<3>(3) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer() //P
+        dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0); //R
+        dP(xi)= deltaPij() + delPdelBiasVel_ * biasIncr.wheelspeed() //P
                            + delPdelBiasOmega_ * biasIncr.gyroscope();
 
         if (H) {
             Matrix36 D_dR_bias, D_dP_bias;
             D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
-            D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
+            D_dP_bias << delPdelBiasVel_, delPdelBiasOmega_;
             (*H) << D_dR_bias, D_dP_bias;
         }
         return xi;

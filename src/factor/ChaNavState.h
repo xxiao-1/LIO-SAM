@@ -74,8 +74,8 @@ public:
   /// @name Component Access
   /// @{
 
-  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
-  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
+  const Rot3& attitude(OptionalJacobian<3, 6> H = boost::none) const;
+  const Point3& position(OptionalJacobian<3, 6> H = boost::none) const;
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }
@@ -122,16 +122,16 @@ public:
 
   // Tangent space sugar.
   // TODO(frank): move to private navstate namespace in cpp
-  static Eigen::Block<Vector6, 3, 1> dR(Vector9& v) {
+  static Eigen::Block<Vector6, 3, 1> dR(Vector6& v) {
     return v.segment<3>(0);
   }
-  static Eigen::Block<Vector6, 3, 1> dP(Vector9& v) {
+  static Eigen::Block<Vector6, 3, 1> dP(Vector6& v) {
     return v.segment<3>(3);
   }
-  static Eigen::Block<const Vector9, 3, 1> dR(const Vector9& v) {
+  static Eigen::Block<const Vector6, 3, 1> dR(const Vector6& v) {
     return v.segment<3>(0);
   }
-  static Eigen::Block<const Vector9, 3, 1> dP(const Vector9& v) {
+  static Eigen::Block<const Vector6, 3, 1> dP(const Vector6& v) {
     return v.segment<3>(3);
   }
 
@@ -156,12 +156,12 @@ public:
       OptionalJacobian<6, 3> G2) const;
 
   /// Compute tangent space contribution due to Coriolis forces
-//  Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
+//  Vector6 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
 //      OptionalJacobian<6, 6> H = boost::none) const;
 
   /// Correct preintegrated tangent vector with our velocity and rotated gravity,
   /// taking into account Coriolis forces if omegaCoriolis is given.
-//  Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
+//  Vector6 correctPIM(const Vector6& pim, double dt, const Vector3& n_gravity,
 //      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
 //          false, OptionalJacobian<6, 6> H1 = boost::none,
 //      OptionalJacobian<6, 6> H2 = boost::none) const;

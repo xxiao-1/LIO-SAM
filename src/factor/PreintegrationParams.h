@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <gtsam/navigation/PreintegratedRotation.h>
+#include "PreintegratedRotation.h"
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
@@ -26,47 +26,29 @@ namespace gtsam {
 struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   Matrix3 wheelspeedsensorCovariance; ///< continuous-time "Covariance" of wheel speed sensor
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
-  bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
-  Vector3 n_gravity; ///< Gravity vector in nav frame
 
   /// Default constructor for serialization only
   PreintegrationParams()
       : PreintegratedRotationParams(),
         wheelspeedsensorCovariance(I_3x3),
-        integrationCovariance(I_3x3),
-        use2ndOrderCoriolis(false),
-        n_gravity(0, 0, -1) {}
+        integrationCovariance(I_3x3){}
 
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
   PreintegrationParams(const Vector3& n_gravity)
       : PreintegratedRotationParams(),
         wheelspeedsensorCovariance(I_3x3),
-        integrationCovariance(I_3x3),
-        use2ndOrderCoriolis(false),
-        n_gravity(n_gravity) {}
-
-  // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
-  }
-
-  // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
-  }
+        integrationCovariance(I_3x3) {}
 
   void print(const std::string& s="") const override;
   bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
   void setWheelspeedsensorCovariance(const Matrix3& cov) { wheelspeedsensorCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
-  void setUse2ndOrderCoriolis(bool flag)              { use2ndOrderCoriolis = flag; }
 
   const Matrix3& getWheelspeedsensorCovariance() const { return wheelspeedsensorCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
-  const Vector3& getGravity()   const { return n_gravity; }
-  bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
+
 
 protected:
 
@@ -78,8 +60,6 @@ protected:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
     ar & BOOST_SERIALIZATION_NVP(wheelspeedsensorCovariance);
     ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
-    ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
-    ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
 
 #ifdef GTSAM_USE_QUATERNIONS
