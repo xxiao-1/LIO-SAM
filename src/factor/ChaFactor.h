@@ -124,13 +124,11 @@ public:
  *
  * @addtogroup SLAM
  */
-class GTSAM_EXPORT ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
-    imuBias::ConstantBias> {
+class GTSAM_EXPORT ChaFactor: public NoiseModelFactor3<Pose3, Pose3, chaBias::ConstantBias> {
 private:
 
-  typedef ImuFactor This;
-  typedef NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
-      imuBias::ConstantBias> Base;
+  typedef ChaFactor This;
+  typedef NoiseModelFactor3<Pose3, Pose3, chaBias::ConstantBias> Base;
 
   PreintegratedImuMeasurements _PIM_;
 
@@ -144,7 +142,7 @@ public:
 #endif
 
   /** Default constructor - only use for serialization */
-  ImuFactor() {}
+  ChaFactor() {}
 
   /**
    * Constructor
@@ -154,10 +152,10 @@ public:
    * @param vel_j  Current velocity key
    * @param bias   Previous bias key
    */
-  ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
+  ChaFactor(Key pose_i,  Key pose_j, Key bias,
       const PreintegratedImuMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor() {
+  virtual ~ChaFactor() {
   }
 
   /// @return a deep copy of this factor
@@ -173,19 +171,17 @@ public:
 
   /** Access the preintegrated measurements. */
 
-  const PreintegratedImuMeasurements& preintegratedMeasurements() const {
+  const PreintegratedChaMeasurements& preintegratedMeasurements() const {
     return _PIM_;
   }
 
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
+  Vector evaluateError(const Pose3& pose_i, const Pose3& pose_j,
+      const chaBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
           boost::none, boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
-          boost::none, boost::optional<Matrix&> H5 = boost::none) const override;
+      boost::optional<Matrix&> H3 = boost::none) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -210,21 +206,21 @@ public:
 // class ImuFactor
 
 /**
- * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
+ * ChaFactor2 is a ternary factor that uses ChaNavStates rather than Pose/Velocity.
  * @addtogroup SLAM
  */
-class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ChaFactor2 : public NoiseModelFactor3<ChaNavState, ChaNavState, chaBias::ConstantBias> {
 private:
 
-  typedef ImuFactor2 This;
-  typedef NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> Base;
+  typedef ChaFactor2 This;
+  typedef NoiseModelFactor3<ChaNavState, ChaNavState, chaBias::ConstantBias> Base;
 
-  PreintegratedImuMeasurements _PIM_;
+PreintegratedChaMeasurements _PIM_;
 
 public:
 
   /** Default constructor - only use for serialization */
-  ImuFactor2() {}
+  ChaFactor2() {}
 
   /**
    * Constructor
@@ -232,10 +228,9 @@ public:
    * @param state_j Current state key
    * @param bias    Previous bias key
    */
-  ImuFactor2(Key state_i, Key state_j, Key bias,
-             const PreintegratedImuMeasurements& preintegratedMeasurements);
+  ChaFactor2(Key state_i, Key state_j, Key bias, const PreintegratedChaMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor2() {
+  virtual ~ChaFactor2() {
   }
 
   /// @return a deep copy of this factor
@@ -243,7 +238,7 @@ public:
 
   /// @name Testable
   /// @{
-  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor2&);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ChaFactor2&);
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -251,15 +246,15 @@ public:
 
   /** Access the preintegrated measurements. */
 
-  const PreintegratedImuMeasurements& preintegratedMeasurements() const {
+  const PreintegratedChaMeasurements& preintegratedMeasurements() const {
     return _PIM_;
   }
 
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,  //
+  Vector evaluateError(const ChaNavState& state_i, const ChaNavState& state_j,
+                       const chaBias::ConstantBias& bias_i,  //
                        boost::optional<Matrix&> H1 = boost::none,
                        boost::optional<Matrix&> H2 = boost::none,
                        boost::optional<Matrix&> H3 = boost::none) const override;
@@ -275,15 +270,15 @@ private:
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
 };
-// class ImuFactor2
+// class ChaFactor2
 
 template <>
-struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedImuMeasurements> {};
+struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedChaMeasurements> {};
 
 template <>
-struct traits<ImuFactor> : public Testable<ImuFactor> {};
+struct traits<ChaFactor> : public Testable<ChaFactor> {};
 
 template <>
-struct traits<ImuFactor2> : public Testable<ImuFactor2> {};
+struct traits<ChaFactor2> : public Testable<ChaFactor2> {};
 
 } /// namespace gtsam

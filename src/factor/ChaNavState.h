@@ -12,8 +12,8 @@
 /**
  * @file    NavState.h
  * @brief   Navigation state composing of attitude, position, and velocity
- * @author  Frank Dellaert
- * @date    July 2015
+ * @author  xiao hongru
+ * @date    April 2021
  **/
 
 #pragma once
@@ -52,7 +52,7 @@ public:
 
   /// Default constructor
   ChaNavState() :
-      t_(0, 0, 0)) {
+      t_(0, 0, 0) {
   }
   /// Construct from attitude, position, velocity
   ChaNavState(const Rot3& R, const Point3& t) :
@@ -69,9 +69,6 @@ public:
   /// Named constructor with derivatives
   static ChaNavState Create(const Rot3& R, const Point3& t
       OptionalJacobian<6, 3> H1, OptionalJacobian<6, 3> H2);
-  /// Named constructor with derivatives
-  static ChaNavState FromPose(const Pose3& pose, const Vector3& vel,
-      OptionalJacobian<6, 6> H1, OptionalJacobian<6, 3> H2);
 
   /// @}
   /// @name Component Access
@@ -79,7 +76,6 @@ public:
 
   const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
   const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
-
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }
@@ -104,7 +100,7 @@ public:
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
   /// With this embedding in GL(3), matrix product agrees with compose
-  Matrix7 matrix() const;
+//  Matrix7 matrix() const;
 
   /// @}
   /// @name Testable

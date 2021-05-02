@@ -9,15 +9,6 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- *  @file  PreintegrationParams.h
- *  @author Luca Carlone
- *  @author Stephen Williams
- *  @author Richard Roberts
- *  @author Vadim Indelman
- *  @author David Jensen
- *  @author Frank Dellaert
- **/
 
 #include "PreintegrationParams.h"
 
@@ -28,7 +19,7 @@ namespace gtsam {
 //------------------------------------------------------------------------------
 void PreintegrationParams::print(const string& s) const {
   PreintegratedRotationParams::print(s);
-  cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
+  cout << "wheelspeedsensorCovariance:\n[\n" << wheelspeedsensorCovariance << "\n]"
        << endl;
   cout << "integrationCovariance:\n[\n" << integrationCovariance << "\n]"
        << endl;
@@ -44,7 +35,7 @@ bool PreintegrationParams::equals(const PreintegratedRotationParams& other,
   auto e = dynamic_cast<const PreintegrationParams*>(&other);
   return e != nullptr && PreintegratedRotationParams::equals(other, tol) &&
          use2ndOrderCoriolis == e->use2ndOrderCoriolis &&
-         equal_with_abs_tol(accelerometerCovariance, e->accelerometerCovariance,
+         equal_with_abs_tol(wheelspeedsensorCovariance, e->wheelspeedsensorCovariance,
                             tol) &&
          equal_with_abs_tol(integrationCovariance, e->integrationCovariance,
                             tol) &&

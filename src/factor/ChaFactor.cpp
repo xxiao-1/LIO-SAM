@@ -20,7 +20,7 @@ namespace gtsam {
 using namespace std;
 
 //------------------------------------------------------------------------------
-// Inner class PreintegratedImuMeasurements
+// Inner class PreintegratedChaMeasurements
 //------------------------------------------------------------------------------
 void PreintegratedChaMeasurements::print(const string& s) const {
   PreintegrationType::print(s);
@@ -45,7 +45,7 @@ void PreintegratedChaMeasurements::integrateMeasurement(
     const Vector3& measureVel, const Vector3& measuredOmega, double dt) {
   if (dt <= 0) {
     throw std::runtime_error(
-        "PreintegratedImuMeasurements::integrateMeasurement: dt <=0");
+        "PreintegratedChaMeasurements::integrateMeasurement: dt <=0");
   }
 
   // Update preintegrated measurements (also get Jacobian)
@@ -87,21 +87,12 @@ void PreintegratedChaMeasurements::integrateMeasurements(
   }
 }
 
+
 //------------------------------------------------------------------------------
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12, //
-    Matrix9* H1, Matrix9* H2) {
-  PreintegrationType::mergeWith(pim12, H1, H2);
-  // NOTE(gareth): Temporary P is needed as of Eigen 3.3
-  const Matrix9 P = *H1 * preintMeasCov_ * H1->transpose();
-  preintMeasCov_ = P + *H2 * pim12.preintMeasCov_ * H2->transpose();
-}
-#endif
-//------------------------------------------------------------------------------
-// ImuFactor methods
+// ChaFactor methods
 //------------------------------------------------------------------------------
 ChaFactor::ChaFactor(Key pose_i, Key pose_j, Key bias,
-    const PreintegratedImuMeasurements& pim) :
+    const PreintegratedChaMeasurements& pim) :
     Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i,
         pose_j, bias ), _PIM_(pim) {
 }
@@ -139,59 +130,15 @@ bool ChaFactor::equals(const NonlinearFactor& other, double tol) const {
 Vector ChaFactor::evaluateError(const Pose3& pose_i,
     const Pose3& pose_j,  const chaBias::ConstantBias& bias_i, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
-  return _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      H1, H2, H3);
+  return _PIM_.computeErrorAndJacobians(pose_i,  pose_j,  bias_i, H1, H2, H3);
 }
 
-//------------------------------------------------------------------------------
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-PreintegratedImuMeasurements ImuFactor::Merge(
-    const PreintegratedImuMeasurements& pim01,
-    const PreintegratedImuMeasurements& pim12) {
-  if (!pim01.matchesParamsWith(pim12))
-  throw std::domain_error(
-      "Cannot merge PreintegratedImuMeasurements with different params");
-
-  if (pim01.params()->body_P_sensor)
-  throw std::domain_error(
-      "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
-
-  // the bias for the merged factor will be the bias from 01
-  PreintegratedImuMeasurements pim02 = pim01;
-
-  Matrix9 H1, H2;
-  pim02.mergeWith(pim12, &H1, &H2);
-
-  return pim02;
-}
 
 //------------------------------------------------------------------------------
-ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
-    const shared_ptr& f12) {
-  // IMU bias keys must be the same.
-  if (f01->key3() != f12->key3())
-  throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
-
-  // expect intermediate pose to matchup.
-  if (f01->key1() != f12->key2() )
-  throw std::domain_error(
-      "ChaFactor::Merge: intermediate pose, velocity keys need to match up");
-
-  // return new factor
-  auto pim02 =
-  Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
-      f12->key2(),  // P2
-      f01->key3(),  // B
-      pim02);
-}
-#endif
-
-//------------------------------------------------------------------------------
-// ImuFactor2 methods
+// ChaFactor2 methods
 //------------------------------------------------------------------------------
 ChaFactor2::ChaFactor2(Key state_i, Key state_j, Key bias,
-    const PreintegratedImuMeasurements& pim) :
+    const PreintegratedChaMeasurements& pim) :
     Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), state_i, state_j,
         bias), _PIM_(pim) {
 }
@@ -203,7 +150,7 @@ NonlinearFactor::shared_ptr ChaFactor2::clone() const {
 }
 
 //------------------------------------------------------------------------------
-std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
+std::ostream& operator<<(std::ostream& os, const ChaFactor2& f) {
   f._PIM_.print("preintegrated measurements:\n");
   os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
   return os;
@@ -212,7 +159,7 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
 //------------------------------------------------------------------------------
 void ChaFactor2::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << (s == "" ? s : s + "\n") << "ImuFactor2("
+  cout << (s == "" ? s : s + "\n") << "ChaFactor2("
        << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
        << keyFormatter(this->key3()) << ")\n";
   cout << *this << endl;

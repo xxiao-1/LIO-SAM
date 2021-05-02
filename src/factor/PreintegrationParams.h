@@ -24,7 +24,7 @@ namespace gtsam {
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
-  Matrix3 wheelspeedsensorCovariance; ///< continuous-time "Covariance" of accelerometer
+  Matrix3 wheelspeedsensorCovariance; ///< continuous-time "Covariance" of wheel speed sensor
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
@@ -32,7 +32,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// Default constructor for serialization only
   PreintegrationParams()
       : PreintegratedRotationParams(),
-        accelerometerCovariance(I_3x3),
+        wheelspeedsensorCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(0, 0, -1) {}
@@ -41,7 +41,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// For convenience, two commonly used conventions are provided by named constructors below
   PreintegrationParams(const Vector3& n_gravity)
       : PreintegratedRotationParams(),
-        accelerometerCovariance(I_3x3),
+        wheelspeedsensorCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(n_gravity) {}
@@ -59,11 +59,11 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   void print(const std::string& s="") const override;
   bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
-  void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
+  void setWheelspeedsensorCovariance(const Matrix3& cov) { wheelspeedsensorCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
   void setUse2ndOrderCoriolis(bool flag)              { use2ndOrderCoriolis = flag; }
 
-  const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
+  const Matrix3& getWheelspeedsensorCovariance() const { return wheelspeedsensorCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
   const Vector3& getGravity()   const { return n_gravity; }
   bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
@@ -76,7 +76,7 @@ protected:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
-    ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
+    ar & BOOST_SERIALIZATION_NVP(wheelspeedsensorCovariance);
     ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);

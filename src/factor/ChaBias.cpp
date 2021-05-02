@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /// All bias models live in the imuBias namespace
-namespace imuBias {
+namespace chaBias {
 
 /*
  * NOTES:
@@ -66,7 +66,7 @@ namespace imuBias {
 //    }
 /// ostream operator
 std::ostream& operator<<(std::ostream& os, const ConstantBias& bias) {
-  os << "acc = " << Point3(bias.accelerometer());
+  os << "vel = " << Point3(bias.wheelspeed());
   os << " gyro = " << Point3(bias.gyroscope());
   return os;
 }

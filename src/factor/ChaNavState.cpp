@@ -27,15 +27,6 @@ ChaNavState ChaNavState::Create(const Rot3& R, const Point3& t
     *H2 << Z_3x3, R.transpose();
   return ChaNavState(R, t);
 }
-//------------------------------------------------------------------------------
-ChaNavState ChaNavState::FromPoseVelocity(const Pose3& pose, const Vector3& vel,
-    OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2) {
-  if (H1)
-    *H1 << I_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
-  if (H2)
-    *H2 << Z_3x3, Z_3x3, pose.rotation().transpose();
-  return ChaNavState(pose, vel);
-}
 
 //------------------------------------------------------------------------------
 const Rot3& ChaNavState::attitude(OptionalJacobian<3, 6> H) const {
@@ -60,15 +51,15 @@ Vector3 ChaNavState::bodyVelocity(const Vector3& vel, OptionalJacobian<3, 6> H) 
   if (H)
     *H << D_bv_nRb, Z_3x3;
   return b_v;
-}// TODO delete this function
+}
 
 //------------------------------------------------------------------------------
-Matrix7 ChaNavState::matrix() const {
-  Matrix3 R = this->R();
-  Matrix7 T;
-  T << R, Z_3x3, t(), Z_3x3, R, v(), Vector6::Zero().transpose(), 1.0;
-  return T;
-}
+//Matrix7 ChaNavState::matrix() const {
+//  Matrix3 R = this->R();
+//  Matrix7 T;
+//  T << R, Z_3x3, t(), Z_3x3, R, v(), Vector6::Zero().transpose(), 1.0;
+//  return T;
+//}
 
 //------------------------------------------------------------------------------
 ostream& operator<<(ostream& os, const ChaNavState& state) {
@@ -78,7 +69,7 @@ ostream& operator<<(ostream& os, const ChaNavState& state) {
 }
 
 //------------------------------------------------------------------------------
-void NavState::print(const string& s) const {
+void ChaNavState::print(const string& s) const {
   cout << (s.empty() ? s : s + " ") << *this << endl;
 }
 
@@ -120,7 +111,7 @@ Vector6 ChaNavState::localCoordinates(const ChaNavState& g, //
   Matrix3 D_xi_R;
   xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dt;
   if (H1) {
-    *H1 << D_xi_R * D_dR_R, Z_3x3, //
+    *H1 << D_xi_R * D_dR_R,//
     D_dt_R, -I_3x3;
   }
   if (H2) {
@@ -136,8 +127,6 @@ Vector6 ChaNavState::localCoordinates(const ChaNavState& g, //
 #define D_R_t(H) (H)->block<3,3>(0,3)
 #define D_t_R(H) (H)->block<3,3>(3,0)
 #define D_t_t(H) (H)->block<3,3>(3,3)
-
-
 
 //------------------------------------------------------------------------------
 ChaNavState ChaNavState::update(const Vector3& b_velocity, const Vector3& b_omega,
