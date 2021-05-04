@@ -133,7 +133,7 @@ class GTSAM_EXPORT ChaPreintegrationBase {
       const double dt, Matrix6* A, Matrix63* B, Matrix63* C) = 0;
 
   /// Version without derivatives
-  virtual void integrateMeasurement(const Vector3& measuredAcc,
+  virtual void integrateMeasurement(const Vector3& measuredVel,
       const Vector3& measuredOmega, const double dt);
 
   /// Given the estimate of the bias, return a ChaNavState tangent vector

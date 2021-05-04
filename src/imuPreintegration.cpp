@@ -159,13 +159,14 @@ public:
     std::mutex mtx;
     struct DynamicMeasurement {
         double time;
-        Eigen::Vector3d velocity;
-        Eigen::Vector3d angle;
+        gtsam::Vector3 velocity;
+        gtsam::Vector3 angle;
     };
     ros::Subscriber subImu;
     ros::Subscriber subOdometry;
     ros::Subscriber subChassis;
     ros::Publisher pubImuOdometry;
+    ros::Publisher pubChaOdometry;
 
     bool systemInitialized = false;
 
@@ -187,20 +188,29 @@ public:
 
     std::deque <DynamicMeasurement> chaQueOpt;
     std::deque <DynamicMeasurement> chaQueCha;
+    gtsam::PreintegratedChaMeasurements *chaIntegratorOpt_;
+    gtsam::PreintegratedChaMeasurements *chaIntegratorCha_;
 
     gtsam::Pose3 prevPose_;
     gtsam::Vector3 prevVel_;
     gtsam::NavState prevState_;
     gtsam::imuBias::ConstantBias prevBias_;
 
+
     gtsam::NavState prevStateOdom;
     gtsam::imuBias::ConstantBias prevBiasOdom;
+
+    gtsam::ChaNavState prevStateCha_;
+    gtsam::chaBias::ConstantBias prevBiasCha_;
+    gtsam::ChaNavState prevStateCha;
+    gtsam::chaBias::ConstantBias prevBiasCha;
+    double lastChaT_cha = -1;
+    double lastChaT_opt = -1;
 
     int steerAngleRatio = 17.4;
     bool doneFirstOpt = false;
     double lastImuT_imu = -1;
     double lastImuT_opt = -1;
-    double lastChassisT_opt = -1;
     gtsam::ISAM2 optimizer;
     gtsam::NonlinearFactorGraph graphFactors;
     gtsam::Values graphValues;
@@ -226,6 +236,7 @@ public:
                                                          this, ros::TransportHints().tcpNoDelay());
 
         pubImuOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic + "_incremental", 2000);
+        pubChaOdometry = nh.advertise<nav_msgs::Odometry>("chassis_incremental", 2000);
 
         boost::shared_ptr <gtsam::PreintegrationParams> p = gtsam::PreintegrationParams::MakeSharedU(imuGravity);
         p->accelerometerCovariance =
@@ -251,10 +262,18 @@ public:
         noiseModelBetweenBias = (gtsam::Vector(6)
                 << imuAccBiasN, imuAccBiasN, imuAccBiasN, imuGyrBiasN, imuGyrBiasN, imuGyrBiasN).finished();
 
-        imuIntegratorImu_ = new gtsam::PreintegratedImuMeasurements(p,
-                                                                    prior_imu_bias); // setting up the IMU integration for IMU message thread
-        imuIntegratorOpt_ = new gtsam::PreintegratedImuMeasurements(p,
-                                                                    prior_imu_bias); // setting up the IMU integration for optimization
+        imuIntegratorImu_ = new gtsam::PreintegratedImuMeasurements(p, prior_imu_bias); // setting up the IMU integration for IMU message thread
+        imuIntegratorOpt_ = new gtsam::PreintegratedImuMeasurements(p, prior_imu_bias); // setting up the IMU integration for optimization
+
+        // use chassis
+        boost::shared_ptr <gtsam::ChaPreintegrationParams> p_cha = gtsam::ChaPreintegrationParams::MakeSharedU();
+        p_cha->wheelspeedsensorCovariance = gtsam::Matrix33::Identity(3, 3) * pow(0.002, 2); // acc white noise in continuous
+        p_cha->gyroscopeCovariance = gtsam::Matrix33::Identity(3, 3) * pow(imuGyrNoise, 2); // gyro white noise in continuous
+        gtsam::chaBias::ConstantBias prior_cha_bias(
+                (gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());// assume zero initial bias
+        chaIntegratorCha_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for IMU message thread
+        chaIntegratorOpt_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for optimization
+
     }
 
     void resetOptimization() {
@@ -277,10 +296,56 @@ public:
     }
 
     void chassisHandler(const lio_sam::chassis_data::ConstPtr &chassis_msg) {
+        std::lock_guard <std::mutex> lock(mtx);
         DynamicMeasurement thisChassis = vehicleDynamicsModel1(chassis_msg->header.stamp.toSec(), chassis_msg->Velocity,
                                                                chassis_msg->SteeringAngle);
         chaQueOpt.push_back(thisChassis);
         chaQueCha.push_back(thisChassis);
+
+        if (doneFirstOpt == false)
+            return;
+
+        double chaTime = thisChassis.time;
+        double dt = (lastChaT_cha < 0) ? (1.0 / 500.0) : (chaTime - lastChaT_cha);
+        lastChaT_cha = chaTime;
+        // integrate this single chassis message
+        chaIntegratorCha_->integrateMeasurement(
+                thisChassis.velocity,thisChassis.angle, dt);
+        // predict odometry
+        gtsam::ChaNavState currentChaState = chaIntegratorCha_->predict(prevStateCha, prevBiasCha);// TODO
+
+        // publish odometry
+        nav_msgs::Odometry odometryCha;
+        odometryCha.header.stamp = chassis_msg->header.stamp;
+        odometryCha.header.frame_id = odometryFrame;
+        odometryCha.child_frame_id = "odom_cha";
+
+        // transform cha pose to lidar
+        gtsam::Pose3 chaPose = gtsam::Pose3(currentChaState.quaternion(), currentChaState.position());
+        gtsam::Pose3 lidarPose = chaPose.compose(imu2Lidar); //平移变换
+
+        odometryCha.pose.pose.position.x = lidarPose.translation().x();
+        odometryCha.pose.pose.position.y = lidarPose.translation().y();
+        odometryCha.pose.pose.position.z = lidarPose.translation().z();
+        odometryCha.pose.pose.orientation.x = lidarPose.rotation().toQuaternion().x();
+        odometryCha.pose.pose.orientation.y = lidarPose.rotation().toQuaternion().y();
+        odometryCha.pose.pose.orientation.z = lidarPose.rotation().toQuaternion().z();
+        odometryCha.pose.pose.orientation.w = lidarPose.rotation().toQuaternion().w();
+
+//        odometryCha.twist.twist.linear.x = (1+prevBiasCha.wheelspeed().x)*(thisChassis.velocity.x);
+//        odometryCha.twist.twist.linear.y = (1+prevBiasCha.wheelspeed().y)*(thisChassis.velocity.y);
+//        odometryCha.twist.twist.linear.z = (1+prevBiasCha.wheelspeed().z)*(thisChassis.velocity.z);
+//        odometryCha.twist.twist.angular.x = thisChassis.angle.x + prevBiasCha.gyroscope().x();
+//        odometryCha.twist.twist.angular.y = thisChassis.angle.y + prevBiasCha.gyroscope().y();
+//        odometryCha.twist.twist.angular.z = thisChassis.angle.z + prevBiasCha.gyroscope().z();
+        odometryCha.twist.twist.linear.x = 0;
+        odometryCha.twist.twist.linear.y = 0;
+        odometryCha.twist.twist.linear.z =0;
+        odometryCha.twist.twist.angular.x = 0;
+        odometryCha.twist.twist.angular.y = 0;
+        odometryCha.twist.twist.angular.z = 0;
+        pubChaOdometry.publish(odometryCha);
+
     }
 
     DynamicMeasurement vehicleDynamicsModel1(double t, double Velocity, double Steer) {
@@ -353,7 +418,7 @@ public:
             // pop old chassis message
             while (!chaQueOpt.empty()) {
                 if (chaQueOpt.front().time < currentCorrectionTime - delta_t) {
-                    lastChassisT_opt = chaQueOpt.front().time;
+                    lastChaT_opt = chaQueOpt.front().time;
                     chaQueOpt.pop_front();
                 } else
                     break;
@@ -367,19 +432,19 @@ public:
             prevVel_ = gtsam::Vector3(0, 0, 0);
             gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
             graphFactors.add(priorVel);
-            // use chassis to init
-//            DynamicMeasurement *thisChassisInit = &chaQueOpt.front();
-//            prevVel_ = gtsam::Vector3(thisChassisInit->velocity[0], 0, 0);
-//            gtsam::PriorFactor <gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
-//            graphFactors.add(priorVel);
             // initial bias
             prevBias_ = gtsam::imuBias::ConstantBias();
             gtsam::PriorFactor <gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
             graphFactors.add(priorBias);
+            // initial chassis bias
+            prevBiasCha_ = gtsam::chaBias::ConstantBias();
+            gtsam::PriorFactor <gtsam::chaBias::ConstantBias> priorBiasCha(K(0), prevBiasCha_, priorBiasNoise);
+            graphFactors.add(priorBiasCha);
             // add values
             graphValues.insert(X(0), prevPose_);
-            graphValues.insert(V(0), prevVel_);
+            graphValues.insert(V(0), prevVel_); //TODO USING CHASSIS?
             graphValues.insert(B(0), prevBias_);
+            graphValues.insert(K(0), prevBiasCha_);
             // optimize once
             optimizer.update(graphFactors, graphValues);
             graphFactors.resize(0);
@@ -387,6 +452,9 @@ public:
 
             imuIntegratorImu_->resetIntegrationAndSetBias(prevBias_);
             imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
+
+            chaIntegratorCha_->resetIntegrationAndSetBias(prevBiasCha_);
+            chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
 
             key = 1;
             systemInitialized = true;
@@ -403,6 +471,8 @@ public:
                     optimizer.marginalCovariance(V(key - 1)));
             gtsam::noiseModel::Gaussian::shared_ptr updatedBiasNoise = gtsam::noiseModel::Gaussian::Covariance(
                     optimizer.marginalCovariance(B(key - 1)));
+            gtsam::noiseModel::Gaussian::shared_ptr updatedBiasChaNoise = gtsam::noiseModel::Gaussian::Covariance(
+                    optimizer.marginalCovariance(K(key - 1)));
             // reset graph
             resetOptimization();
             // add pose
@@ -414,10 +484,14 @@ public:
             // add bias
             gtsam::PriorFactor <gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, updatedBiasNoise);
             graphFactors.add(priorBias);
+            // add bias
+            gtsam::PriorFactor <gtsam::chaBias::ConstantBias> priorBiasCha(K(0), prevBiasCha_, updatedBiasChaNoise);
+            graphFactors.add(priorBiasCha);
             // add values
             graphValues.insert(X(0), prevPose_);
             graphValues.insert(V(0), prevVel_);
             graphValues.insert(B(0), prevBias_);
+            graphValues.insert(K(0), prevBiasCha_);
             // optimize once
             optimizer.update(graphFactors, graphValues);
             graphFactors.resize(0);
@@ -446,28 +520,20 @@ public:
                 break;
         }
 
-        gtsam::DynamicsBase chassisIntegratorOpt_(0.0);
-        bool flag = false;
-        if (useChassis) {
-            // 2. integrate dynamic data and optimize
-            while (!chaQueOpt.empty()) {
-                // pop and integrate imu data that is between two optimizations
-                DynamicMeasurement *thisChassis = &chaQueOpt.front();
-                double chaTime = thisChassis->time;
-                if (chaTime < currentCorrectionTime - delta_t) {
-                    double dt = (lastChassisT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChassisT_opt);
-//                    chassisIntegratorOpt_.push_back(dt, thisChassis->velocity, thisChassis->angle);//TODO angel换成imu
-                    lastChassisT_opt = chaTime;
-                    chaQueOpt.pop_front();
-                    flag = true;
-                } else {
-                    if (!flag) {
-                        chassisIntegratorOpt_.showDelt();
-                    }
-                    break;
-                }
+        // 1. integrate chassis data and optimize
+        while (!chaQueOpt.empty()) {
+            // pop and integrate imu data that is between two optimizations
+            DynamicMeasurement *thisChassis= &chaQueOpt.front();
+            double chaTime = thisChassis->time;
+            if (chaTime < currentCorrectionTime - delta_t) {
+                double dt = (lastChaT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChaT_opt);
+                chaIntegratorOpt_->integrateMeasurement(
+                       thisChassis->velocity, thisChassis->angle, dt);
 
-            }
+                lastChaT_opt = chaTime;
+                chaQueOpt.pop_front();
+            } else
+                break;
         }
 
         // add imu factor to graph
@@ -495,35 +561,17 @@ public:
 
         // add chassis factor
         if (useChassis) {
-            gtsam::Pose3 poseFrom = prevPose_;
-            Eigen::Vector3d Pi = poseFrom.translation();
-            Eigen::Quaterniond Qi = poseFrom.rotation().toQuaternion();
-            Eigen::Vector3d delta_p = chassisIntegratorOpt_.getDeltaP();// TODO add
-            Eigen::Quaterniond delta_q = chassisIntegratorOpt_.getDeltaQ();
-            Eigen::Matrix<double, 6, 6> chassisCovariance = chassisIntegratorOpt_.getCovariance();
-            float transformChassis[3];
-            for (int i = 0; i < 3; i++) {
-                transformChassis[i] = Pi[i] + delta_p[i];
-            }
-            Eigen::Quaterniond Qj = delta_q * Qi;
-            gtsam::Pose3 poseTo = gtsam::Pose3(propState_.pose().rotation(),
-                                               gtsam::Point3(transformChassis[0], transformChassis[1],
-                                                             transformChassis[2]));
-            gtsam::Point3(transformChassis[0], transformChassis[1],transformChassis[2]);
-            gtsam::noiseModel::Diagonal::shared_ptr chassisNoise1 = gtsam::noiseModel::Diagonal::Variances(
-                    (gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
-            gtsam::SharedNoiseModel chassisNoise2 =
-                    gtsam::noiseModel::Gaussian::Covariance(chassisCovariance);
-
-//            graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
-            graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
-//            graphFactors.add(cha_pose_factor);
-
-            // add chassis velocity factor
-            gtsam::Vector3 chassisVel(vx,vy,vz);
-            gtsam::PriorFactor <gtsam::Vector3> chassisVel1(V(key), chassisVel, chassisVelNoise);
-            graphFactors.add(chassisVel1);
-            // value: initial value before optimization
+            const gtsam::PreintegratedChaMeasurements &preint_cha = dynamic_cast<const gtsam::PreintegratedChaMeasurements &>(*chaIntegratorOpt_);
+            gtsam::ChaFactor cha_factor(X(key - 1), X(key), K(key - 1), preint_cha);
+            graphFactors.add(cha_factor);
+            // add cha bias between factor
+            graphFactors.add(
+                    gtsam::BetweenFactor<gtsam::chaBias::ConstantBias>(K(key - 1), K(key), gtsam::chaBias::ConstantBias(),
+                                                                       gtsam::noiseModel::Diagonal::Sigmas(
+                                                                               sqrt(chaIntegratorOpt_->deltaTij()) *
+                                                                               noiseModelBetweenBias)));
+            // insert predicted values
+            graphValues.insert(K(key), prevBiasCha_);
             std::cout << "add chassis factor" << std::endl;
         }
 
@@ -540,8 +588,10 @@ public:
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
         // std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
+        prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
+        chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
         // check optimization
         if (failureDetection(prevVel_, prevBias_)) {
             resetParams();
@@ -572,11 +622,18 @@ public:
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;
         prevBiasOdom = prevBias_;
+        prevBiasCha = prevBiasCha_;
         // first pop imu message older than current correction data
         double lastImuQT = -1;
         while (!imuQueImu.empty() && ROS_TIME(&imuQueImu.front()) < currentCorrectionTime - delta_t) {
             lastImuQT = ROS_TIME(&imuQueImu.front());
             imuQueImu.pop_front();
+        }
+        double lastChaQT = -1;
+        DynamicMeasurement *thisChassis=&chaQueCha.front();
+        while (!chaQueCha.empty() && thisChassis->time < currentCorrectionTime - delta_t) {
+            lastChaQT = thisChassis->time;
+            chaQueCha.pop_front();
         }
         // repropogate imuIntegratorImu_利用imuQueImu中的imu信息重新积分
         if (!imuQueImu.empty()) {
@@ -594,6 +651,19 @@ public:
                         gtsam::Vector3(thisImu->angular_velocity.x, thisImu->angular_velocity.y,
                                        thisImu->angular_velocity.z), dt);
                 lastImuQT = imuTime;
+            }
+        }
+        if (!chaQueCha.empty()) {
+            // reset bias use the newly optimized bias
+            chaIntegratorCha_->resetIntegrationAndSetBias(prevBiasCha);
+            // integrate chassis message from the beginning of this optimization
+            for (int i = 0; i < (int) chaQueCha.size(); ++i) {
+                DynamicMeasurement *thisChassis = &chaQueCha[i];
+                double chaTime = thisChassis->time;
+                double dt = (lastChaQT < 0) ? (1.0 / 500.0) : (chaTime - lastChaQT);
+
+                chaIntegratorCha_->integrateMeasurement(thisChassis->velocity,thisChassis->angle, dt);
+                lastChaQT = chaTime;
             }
         }
 

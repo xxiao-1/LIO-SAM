@@ -18,14 +18,10 @@ struct GTSAM_EXPORT ChaPreintegrationParams: ChaPreintegratedRotationParams {
       : ChaPreintegratedRotationParams(),
         wheelspeedsensorCovariance(I_3x3),
         integrationCovariance(I_3x3){}
-
-  /// The Params constructor insists on getting the navigation frame gravity vector
-  /// For convenience, two commonly used conventions are provided by named constructors below
-  ChaPreintegrationParams(const Vector3& n_gravity)
-      : ChaPreintegratedRotationParams(),
-        wheelspeedsensorCovariance(I_3x3),
-        integrationCovariance(I_3x3) {}
-
+    // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
+    static boost::shared_ptr<ChaPreintegrationParams> MakeSharedU() {
+        return boost::shared_ptr<ChaPreintegrationParams>(new ChaPreintegrationParams());
+    }
   void print(const std::string& s="") const override;
   bool equals(const ChaPreintegratedRotationParams& other, double tol) const override;
 
