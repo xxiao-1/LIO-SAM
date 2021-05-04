@@ -97,6 +97,7 @@ public:
     return t_;
   }
 
+  Vector3 bodyVelocity(const Vector3& vel, OptionalJacobian<3, 6> H= boost::none) const;
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
   /// With this embedding in GL(3), matrix product agrees with compose

@@ -85,14 +85,13 @@ namespace gtsam {
         const Matrix3 incrRt = incrR.transpose();
         delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * dt;
 
-        Matrix3d  R_vel;
+        Matrix3  R_vel;
         R_vel << 0, -vel(2), vel(1),
                 vel(2), 0, -vel(0),
                 -vel(1), vel(0), 0;
-        double dt22 = 0.5 * dt * dt;
         const Matrix3 dRij = oldRij.matrix(); // expensive
         delPdelBiasVel_ += dRij * R_vel * dt ;
-        delPdelBiasOmega_ +=  D_vel_biasOmega * dt
+        delPdelBiasOmega_ +=  D_vel_biasOmega * dt;
     }
 
 //------------------------------------------------------------------------------
@@ -111,8 +110,8 @@ namespace gtsam {
         Matrix3 D_dR_correctedRij;
         // TODO(frank): could line below be simplified? It is equivalent to
         //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
-        dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0); //R
-        dP(xi)= deltaPij() + delPdelBiasVel_ * biasIncr.wheelspeed() //P
+        ChaNavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0); //R
+        ChaNavState::dP(xi)= deltaPij() + delPdelBiasVel_ * biasIncr.wheelspeed() //P
                            + delPdelBiasOmega_ * biasIncr.gyroscope();
 
         if (H) {

@@ -19,7 +19,7 @@ namespace gtsam {
 #define TIE(R,t,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;
 
 //------------------------------------------------------------------------------
-ChaNavState ChaNavState::Create(const Rot3& R, const Point3& t
+ChaNavState ChaNavState::Create(const Rot3& R, const Point3& t,
     OptionalJacobian<6, 3> H1, OptionalJacobian<6, 3> H2) {
   if (H1)
     *H1 << I_3x3, Z_3x3;
@@ -135,7 +135,7 @@ ChaNavState ChaNavState::update(const Vector3& b_velocity, const Vector3& b_omeg
 
   Vector6 xi;
   Matrix36 D_xiP_state;
-  Vector3 b_v = bodyVelocity( b_velocity,F ? &D_xiP_state : 0);
+  Vector3 b_v = ChaNavState::bodyVelocity( b_velocity,F ? &D_xiP_state : 0);
 //  double dt22 = 0.5 * dt * dt;
   // Integrate on tangent space. TODO(frank): coriolis?
   dR(xi) << dt * b_omega;

@@ -89,6 +89,16 @@ ENDIF(libpointmatcher_FOUND OR GTSAM_FOUND)
 ## Build ##
 ###########
 
+add_library(lio_lib
+		src/factor/ChaBias.cpp
+		src/factor/ChaFactor.cpp
+		src/factor/ChaManifoldPreintegration.cpp
+		src/factor/ChaNavState.cpp
+		src/factor/ChaPreintegratedRotation.cpp
+		src/factor/ChaPreintegrationParams.cpp
+		src/factor/ChaPreintegrationBase.cpp)
+target_link_libraries(lio_lib ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+
 # Range Image Projection
 add_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)
 add_dependencies(${PROJECT_NAME}_imageProjection ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
@@ -107,4 +117,4 @@ target_link_libraries(${PROJECT_NAME}_mapOptmization ${catkin_LIBRARIES} ${PCL_L
 
 # IMU Preintegration
 add_executable(${PROJECT_NAME}_imuPreintegration src/imuPreintegration.cpp)
-target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+target_link_libraries(${PROJECT_NAME}_imuPreintegration ${catkin_LIBRARIES} ${PCL_LIBRARIES} lio_lib ${OpenCV_LIBRARIES} gtsam)
