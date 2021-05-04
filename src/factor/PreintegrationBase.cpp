@@ -127,7 +127,7 @@ ChaNavState PreintegrationBase::predict(const ChaNavState& state_i,
 }
 
 //------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeError(const ChaNavState& state_i,
+Vector6 PreintegrationBase::computeError(const ChaNavState& state_i,
                                          const ChaNavState& state_j,
                                          const chaBias::ConstantBias& bias_i,
                                          OptionalJacobian<6, 6> H1,

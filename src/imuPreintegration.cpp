@@ -1,5 +1,5 @@
 #include "utility.h"
-#include "dynamic_factor.h"
+#include "factor/dynamic_factor.h"
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -304,7 +304,7 @@ public:
         beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
         vy = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
         vx = vel * cos(beta);
-        rz = vel * steer / i0 / len / (1 - K * vel * vel);
+//        rz = vel * steer / i0 / len / (1 - K * vel * vel);
         chassis_out.velocity = {vx, vy, vz};
         //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
         //chassis_out.angle = {rx, ry, rz};
@@ -455,7 +455,7 @@ public:
                 double chaTime = thisChassis->time;
                 if (chaTime < currentCorrectionTime - delta_t) {
                     double dt = (lastChassisT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChassisT_opt);
-                    chassisIntegratorOpt_.push_back(dt, thisChassis->velocity, thisChassis->angle);//TODO angel换成imu
+//                    chassisIntegratorOpt_.push_back(dt, thisChassis->velocity, thisChassis->angle);//TODO angel换成imu
                     lastChassisT_opt = chaTime;
                     chaQueOpt.pop_front();
                     flag = true;
@@ -516,12 +516,12 @@ public:
 
 //            graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
             graphFactors.add(BetweenFactor<Pose3>(X(key - 1), X(key), poseFrom.between(poseTo), chassisNoise2));
-            graphFactors.add(cha_pose_factor);
+//            graphFactors.add(cha_pose_factor);
 
             // add chassis velocity factor
             gtsam::Vector3 chassisVel(vx,vy,vz);
-            gtsam::PriorFactor <gtsam::Vector3> chassisVel(V(key), chassisVel, chassisVelNoise);
-            graphFactors.add(chassisVel);
+            gtsam::PriorFactor <gtsam::Vector3> chassisVel1(V(key), chassisVel, chassisVelNoise);
+            graphFactors.add(chassisVel1);
             // value: initial value before optimization
             std::cout << "add chassis factor" << std::endl;
         }

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NavState.h
+ * @file    ChaNavState.h
  * @brief   Navigation state composing of attitude, position, and velocity
  * @author  xiao hongru
  * @date    April 2021
@@ -64,10 +64,10 @@ public:
   }
   /// Construct from SO(3) and R^6
   ChaNavState(const Matrix3& R, const Vector3& tv) :
-      R_(R), t_(tv)) {
+      R_(R), t_(tv) {
   }
   /// Named constructor with derivatives
-  static ChaNavState Create(const Rot3& R, const Point3& t
+  static ChaNavState Create(const Rot3& R, const Point3& t,
       OptionalJacobian<6, 3> H1, OptionalJacobian<6, 3> H2);
 
   /// @}
@@ -108,13 +108,13 @@ public:
 
   /// Output stream operator
   GTSAM_EXPORT
-  friend std::ostream &operator<<(std::ostream &os, const NavState& state);
+  friend std::ostream &operator<<(std::ostream &os, const ChaNavState& state);
 
   /// print
   void print(const std::string& s = "") const;
 
   /// equals
-  bool equals(const NavState& other, double tol = 1e-8) const;
+  bool equals(const ChaNavState& other, double tol = 1e-8) const;
 
   /// @}
   /// @name Manifold

@@ -61,12 +61,12 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
       ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
     }
   }
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
+#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
+  using _eigen_aligned_allocator_trait = void;
 public:
 	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
+
 };
 
 /**

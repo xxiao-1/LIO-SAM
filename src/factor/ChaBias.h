@@ -64,8 +64,10 @@ namespace gtsam {
                 Vector3 correctWheelSpeed(const Vector3& measurement,
                 OptionalJacobian<3, 6> H1 = boost::none,
                 OptionalJacobian<3, 3> H2 = boost::none) const {
-                    if (H1) (*H1) << measurement.asDiagonal(), Z_3x3;
-                    if (H2) (*H2) << I_3x3+biasVel_.asDiagonal();
+                    const Matrix3 mea=measurement.asDiagonal();
+                    if (H1) (*H1) << mea, Z_3x3;
+                    if (H2) (*H2) << I_3x3;
+                    *H2 += biasVel_.asDiagonal();
                     Vector3 tmp=measurement.array()*biasVel_.array();
                     return measurement + tmp ;
                 }

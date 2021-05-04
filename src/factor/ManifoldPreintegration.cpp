@@ -49,7 +49,7 @@ namespace gtsam {
                                         Matrix63* C) {
 
         // Correct for bias in the sensor frame
-        Vector3 vel = biasHat_.correctVelelerometer(measuredVel);
+        Vector3 vel = biasHat_.correctWheelSpeed(measuredVel);
         Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
         // Possibly correct for sensor pose
@@ -69,8 +69,8 @@ namespace gtsam {
             // More complicated derivatives in case of non-trivial sensor pose
             *C *= D_correctedOmega_omega;
             if (!p().body_P_sensor->translation().isZero())
-                *C += *B * D_correctedAcc_omega;
-            *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
+                *C += *B * D_correctedVel_omega;
+            *B *= D_correctedVel_vel; // NOTE(frank): needs to be last
         }
 
         // Update Jacobians

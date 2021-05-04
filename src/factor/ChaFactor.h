@@ -15,107 +15,108 @@
 #include "ManifoldPreintegration.h"
 #include <gtsam/base/debug.h>
 
-namespace gtsam {
 
+namespace gtsam {
 typedef ManifoldPreintegration PreintegrationType;
 
-/**
- * PreintegratedImuMeasurements accumulates (integrates) the IMU measurements
- * (rotation rates and accelerations) and the corresponding covariance matrix.
- * The measurements are then used to build the Preintegrated IMU factor.
- * Integration is done incrementally (ideally, one integrates the measurement
- * as soon as it is received from the IMU) so as to avoid costly integration
- * at time of factor construction.
- *
- * @addtogroup SLAM
- */
 class GTSAM_EXPORT PreintegratedChaMeasurements: public PreintegrationType {
 
-  friend class ChaFactor;
-  friend class ChaFactor2;
+    friend class ChaFactor;
 
-protected:
+    friend class ChaFactor2;
 
-  Matrix6 preintMeasCov_; ///< COVARIANCE OF: [PreintROTATION PreintPOSITION ]
-  ///< (first-order propagation from *measurementCovariance*).
+    protected:
 
-public:
+    Matrix6 preintMeasCov_; ///< COVARIANCE OF: [PreintROTATION PreintPOSITION ]
+    ///< (first-order propagation from *measurementCovariance*).
 
-  /// Default constructor for serialization and Cython wrapper
-  PreintegratedChaMeasurements() {
-    preintMeasCov_.setZero();
-  }
+    public:
 
- /**
-   *  Constructor, initializes the class with no measurements
-   *  @param p       Parameters, typically fixed in a single application
-   *  @param biasHat Current estimate of acceleration and rotation rate biases
-   */
-  PreintegratedChaMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
-      const chaBias::ConstantBias& biasHat = chaBias::ConstantBias()) :
-      PreintegrationType(p, biasHat) {
-    preintMeasCov_.setZero();
-  }
+    /// Default constructor for serialization and Cython wrapper
+    PreintegratedChaMeasurements() {
+        preintMeasCov_.setZero();
+    }
+
+    /**
+      *  Constructor, initializes the class with no measurements
+      *  @param p       Parameters, typically fixed in a single application
+      *  @param biasHat Current estimate of acceleration and rotation rate biases
+      */
+    PreintegratedChaMeasurements(const boost::shared_ptr <PreintegrationParams> &p,
+                                 const chaBias::ConstantBias &biasHat = chaBias::ConstantBias()) :
+            PreintegrationType(p, biasHat) {
+        preintMeasCov_.setZero();
+    }
 
 /**
   *  Construct preintegrated directly from members: base class and preintMeasCov
   *  @param base               PreintegrationType instance
   *  @param preintMeasCov      Covariance matrix used in noise model.
   */
-  PreintegratedChaMeasurements(const PreintegrationType& base, const Matrix6& preintMeasCov)
-     : PreintegrationType(base),
-       preintMeasCov_(preintMeasCov) {
-  }
+    PreintegratedChaMeasurements(const PreintegrationType &base, const Matrix6 &preintMeasCov)
+            : PreintegrationType(base),
+              preintMeasCov_(preintMeasCov) {
+    }
 
-  /// Virtual destructor
-  virtual ~PreintegratedImuMeasurements() {
-  }
+    /// Virtual destructor
+    virtual ~
 
-  /// print
-  void print(const std::string& s = "Preintegrated Measurements:") const override;
+    PreintegratedChaMeasurements() {
+    }
 
-  /// equals
-  bool equals(const PreintegratedChaMeasurements& expected, double tol = 1e-9) const;
+    /// print
+    void print(const std::string &s = "Preintegrated Measurements:") const
 
-  /// Re-initialize PreintegratedIMUMeasurements
-  void resetIntegration() override;
+    override;
 
-  /**
-   * Add a single IMU measurement to the preintegration.
-   * @param measuredVel Measured vel (in body frame, as given by the sensor)
-   * @param measuredOmega Measured angular velocity (as given by the sensor)
-   * @param dt Time interval between this and the last IMU measurement
-   */
-  void integrateMeasurement(const Vector3& measuredVel,
-      const Vector3& measuredOmega, const double dt) override;
+    /// equals
+    bool equals(const PreintegratedChaMeasurements &expected, double tol = 1e-9) const;
 
-  /// Add multiple measurements, in matrix columns
-  void integrateMeasurements(const Matrix& measuredVels, const Matrix& measuredOmegas,
-                             const Matrix& dts);
+    /// Re-initialize PreintegratedChaMeasurements
+    void resetIntegration()
 
-  /// Return pre-integrated measurement covariance
-  Matrix preintMeasCov() const { return preintMeasCov_; }
+    override;
 
- private:
-  /// Serialization function
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
-  }
-};
+    /**
+     * Add a single IMU measurement to the preintegration.
+     * @param measuredVel Measured vel (in body frame, as given by the sensor)
+     * @param measuredOmega Measured angular velocity (as given by the sensor)
+     * @param dt Time interval between this and the last IMU measurement
+     */
+    void integrateMeasurement(const Vector3 &measuredVel,
+                              const Vector3 &measuredOmega, const double dt)
+
+    override;
+
+    /// Add multiple measurements, in matrix columns
+    void integrateMeasurements(const Matrix &measuredVels, const Matrix &measuredOmegas,
+                               const Matrix &dts);
+
+    /// Return pre-integrated measurement covariance
+    Matrix preintMeasCov() const { return preintMeasCov_; }
+
+    private:
+
+    /// Serialization function
+    friend class boost::serialization::access;
+
+    template<class ARCHIVE>
+    void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+        namespace bs = ::boost::serialization;
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
+        ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
+    }
+ };
 
 /**
- * ImuFactor is a 5-ways factor involving previous state (pose and velocity of
+ * ChaFactor is a 5-ways factor involving previous state (pose and velocity of
  * the vehicle at previous time step), current state (pose and velocity at
  * current time step), and the bias estimate. Following the preintegration
- * scheme proposed in [2], the ImuFactor includes many IMU measurements, which
- * are "summarized" using the PreintegratedIMUMeasurements class.
+ * scheme proposed in [2], the ChaFactor includes many IMU measurements, which
+ * are "summarized" using the PreintegratedChaMeasurements class.
  * Note that this factor does not model "temporal consistency" of the biases
  * (which are usually slowly varying quantities), which is up to the caller.
- * See also CombinedImuFactor for a class that does this for you.
+ * See also CombinedChaFactor for a class that does this for you.
  *
  * @addtogroup SLAM
  */
@@ -125,15 +126,15 @@ private:
   typedef ChaFactor This;
   typedef NoiseModelFactor3<Pose3, Pose3, chaBias::ConstantBias> Base;
 
-  PreintegratedImuMeasurements _PIM_;
+  PreintegratedChaMeasurements _PIM_;
 
 public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef typename boost::shared_ptr<ChaFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef boost::shared_ptr<ChaFactor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */
@@ -148,7 +149,7 @@ public:
    * @param bias   Previous bias key
    */
   ChaFactor(Key pose_i,  Key pose_j, Key bias,
-      const PreintegratedImuMeasurements& preintegratedMeasurements);
+      const PreintegratedChaMeasurements& preintegratedMeasurements);
 
   virtual ~ChaFactor() {
   }
@@ -158,7 +159,7 @@ public:
 
   /// @name Testable
   /// @{
-  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ChaFactor&);
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -178,15 +179,15 @@ public:
           boost::none, boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const override;
 
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-  /// Merge two pre-integrated measurement classes
-  static PreintegratedImuMeasurements Merge(
-      const PreintegratedImuMeasurements& pim01,
-      const PreintegratedImuMeasurements& pim12);
-
-  /// Merge two factors
-  static shared_ptr Merge(const shared_ptr& f01, const shared_ptr& f12);
-#endif
+//#ifdef GTSAM_TANGENT_PREINTEGRATION
+//  /// Merge two pre-integrated measurement classes
+//  static PreintegratedChaMeasurements Merge(
+//      const PreintegratedChaMeasurements& pim01,
+//      const PreintegratedChaMeasurements& pim12);
+//
+//  /// Merge two factors
+//  static shared_ptr Merge(const shared_ptr& f01, const shared_ptr& f12);
+//#endif
 
  private:
   /** Serialization function */
@@ -198,7 +199,7 @@ public:
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
 };
-// class ImuFactor
+// class ChaFactor
 
 /**
  * ChaFactor2 is a ternary factor that uses ChaNavStates rather than Pose/Velocity.
@@ -268,7 +269,7 @@ private:
 // class ChaFactor2
 
 template <>
-struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedChaMeasurements> {};
+struct traits<PreintegratedChaMeasurements> : public Testable<PreintegratedChaMeasurements> {};
 
 template <>
 struct traits<ChaFactor> : public Testable<ChaFactor> {};

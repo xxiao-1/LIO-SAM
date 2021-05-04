@@ -129,8 +129,8 @@ class GTSAM_EXPORT PreintegrationBase {
    * It takes measured quantities in the j frame
    * Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
    */
-  virtual void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
-      const double dt, Matrix9* A, Matrix93* B, Matrix93* C) = 0;
+  virtual void update(const Vector3& measuredVel, const Vector3& measuredOmega,
+      const double dt, Matrix6* A, Matrix63* B, Matrix63* C) = 0;
 
   /// Version without derivatives
   virtual void integrateMeasurement(const Vector3& measuredAcc,
@@ -142,22 +142,22 @@ class GTSAM_EXPORT PreintegrationBase {
       OptionalJacobian<6, 6> H = boost::none) const = 0;
 
   /// Predict state at time j
-  ChaNavState predict(const ChaNavState& state_i, const chaBias::ConstantBias& bias_i, const Vector3 vel_i,
+  ChaNavState predict(const ChaNavState& state_i, const chaBias::ConstantBias& bias_i,
                    OptionalJacobian<6, 6> H1 = boost::none,
                    OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /// Calculate error given navStates
-  Vector9 computeError(const ChaNavState& state_i, const ChaNavState& state_j,
-                       const chaBias::ConstantBias& bias_i, const Vector3 vel_i,
-                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
-                       OptionalJacobian<9, 6> H3) const;
+  Vector6 computeError(const ChaNavState& state_i, const ChaNavState& state_j,
+                       const chaBias::ConstantBias& bias_i,
+                       OptionalJacobian<6, 6> H1, OptionalJacobian<6, 6> H2,
+                       OptionalJacobian<6, 6> H3) const;
 
   /**
    * Compute errors w.r.t. preintegrated measurements and jacobians
    * wrt pose_i, vel_i, bias_i, pose_j, bias_j
    */
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Pose3& pose_j,
-      const chaBias::ConstantBias& bias_i, const Vector3 vel_i, OptionalJacobian<6, 6> H1 =
+  Vector6 computeErrorAndJacobians(const Pose3& pose_i, const Pose3& pose_j,
+      const chaBias::ConstantBias& bias_i, OptionalJacobian<6, 6> H1 = boost::none,
       OptionalJacobian<6, 6> H2 = boost::none, OptionalJacobian<6, 6> H3 =
           boost::none) const;
 

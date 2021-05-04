@@ -174,8 +174,8 @@ bool ChaFactor2::equals(const NonlinearFactor& other, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-Vector ChaFactor2::evaluateError(const NavState& state_i,
-    const NavState& state_j,
+Vector ChaFactor2::evaluateError(const ChaNavState& state_i,
+    const ChaNavState& state_j,
     const chaBias::ConstantBias& bias_i, //
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
     boost::optional<Matrix&> H3) const {
