@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-#include "ChaBias.h"
+#include "../../include/ChaBias.h"
 #include <gtsam/geometry/Point3.h>
 #include <iostream>
 

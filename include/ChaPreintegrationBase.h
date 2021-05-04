@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "PreintegrationParams.h"
+#include "ChaPreintegrationParams.h"
 #include "ChaNavState.h"
 #include "ChaBias.h"
 #include <gtsam/linear/NoiseModel.h>
@@ -25,15 +25,15 @@
 namespace gtsam {
 
 /**
- * PreintegrationBase is the base class for PreintegratedMeasurements
+ * ChaPreintegrationBase is the base class for PreintegratedMeasurements
  * (in ImuFactor) and CombinedPreintegratedMeasurements (in CombinedImuFactor).
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class GTSAM_EXPORT PreintegrationBase {
+class GTSAM_EXPORT ChaPreintegrationBase {
  public:
   typedef chaBias::ConstantBias Bias;
-  typedef PreintegrationParams Params;
+  typedef ChaPreintegrationParams Params;
 
  protected:
   boost::shared_ptr<Params> p_;
@@ -45,10 +45,10 @@ class GTSAM_EXPORT PreintegrationBase {
   double deltaTij_;
 
   /// Default constructor for serialization
-  PreintegrationBase() {}
+  ChaPreintegrationBase() {}
 
   /// Virtual destructor for serialization
-  virtual ~PreintegrationBase() {}
+  virtual ~ChaPreintegrationBase() {}
 
  public:
   /// @name Constructors
@@ -59,7 +59,7 @@ class GTSAM_EXPORT PreintegrationBase {
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegrationBase(const boost::shared_ptr<Params>& p,
+  ChaPreintegrationBase(const boost::shared_ptr<Params>& p,
       const chaBias::ConstantBias& biasHat = chaBias::ConstantBias());
 
   /// @}
@@ -75,7 +75,7 @@ class GTSAM_EXPORT PreintegrationBase {
   void resetIntegrationAndSetBias(const Bias& biasHat);
 
   /// check parameters equality: checks whether shared pointer points to same Params object.
-  bool matchesParamsWith(const PreintegrationBase& other) const {
+  bool matchesParamsWith(const ChaPreintegrationBase& other) const {
     return p_.get() == other.p_.get();
   }
 
@@ -106,7 +106,7 @@ class GTSAM_EXPORT PreintegrationBase {
 
   /// @name Testable
   /// @{
-  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ChaPreintegrationBase& pim);
   virtual void print(const std::string& s="") const;
   /// @}
 
@@ -172,7 +172,7 @@ class GTSAM_EXPORT PreintegrationBase {
   }
 
  public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  /// namespace gtsam

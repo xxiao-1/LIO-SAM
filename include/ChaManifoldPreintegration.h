@@ -3,7 +3,7 @@
 #pragma once
 
 #include "ChaNavState.h"
-#include "PreintegrationBase.h"
+#include "ChaPreintegrationBase.h"
 
 namespace gtsam {
 
@@ -11,7 +11,7 @@ namespace gtsam {
  * IMU pre-integration on NavSatet manifold.
  * This corresponds to the original RSS paper (with one difference: V is rotated)
  */
-    class GTSAM_EXPORT ManifoldPreintegration : public PreintegrationBase {
+    class GTSAM_EXPORT ChaManifoldPreintegration : public ChaPreintegrationBase {
     protected:
 
     /**
@@ -25,7 +25,7 @@ namespace gtsam {
     Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
 
     /// Default constructor for serialization
-    ManifoldPreintegration() {
+    ChaManifoldPreintegration() {
         resetIntegration();
     }
 
@@ -38,7 +38,7 @@ namespace gtsam {
      *  @param p    Parameters, typically fixed in a single application
      *  @param bias Current estimate of acceleration and rotation rate biases
      */
-    ManifoldPreintegration(const boost::shared_ptr<Params>& p,
+    ChaManifoldPreintegration(const boost::shared_ptr<Params>& p,
                            const chaBias::ConstantBias& biasHat = chaBias::ConstantBias());
 
     /// @}
@@ -62,7 +62,7 @@ Matrix3  delPdelBiasOmega() const { return delPdelBiasOmega_; }
 
 /// @name Testable
 /// @{
-bool equals(const ManifoldPreintegration& other, double tol) const;
+bool equals(const ChaManifoldPreintegration& other, double tol) const;
 /// @}
 
 /// @name Main functionality
@@ -82,8 +82,8 @@ Vector6 biasCorrectedDelta(const chaBias::ConstantBias& bias_i,
                            OptionalJacobian<6, 6> H = boost::none) const override;
 
 /** Dummy clone for MATLAB */
-virtual boost::shared_ptr<ManifoldPreintegration> clone() const {
-    return boost::shared_ptr<ManifoldPreintegration>();
+virtual boost::shared_ptr<ChaManifoldPreintegration> clone() const {
+    return boost::shared_ptr<ChaManifoldPreintegration>();
 }
 
 /// @}
@@ -94,7 +94,7 @@ friend class boost::serialization::access;
 template<class ARCHIVE>
 void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(ChaPreintegrationBase);
     ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(delPdelBiasVel_);

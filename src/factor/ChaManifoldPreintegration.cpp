@@ -9,21 +9,21 @@
 
  * -------------------------------------------------------------------------- */
 
-#include "ManifoldPreintegration.h"
+#include "../../include/ChaManifoldPreintegration.h"
 
 using namespace std;
 
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-    ManifoldPreintegration::ManifoldPreintegration(
+    ChaManifoldPreintegration::ChaManifoldPreintegration(
             const boost::shared_ptr<Params>& p, const Bias& biasHat) :
-            PreintegrationBase(p, biasHat) {
+            ChaPreintegrationBase(p, biasHat) {
         resetIntegration();
     }
 
 //------------------------------------------------------------------------------
-    void ManifoldPreintegration::resetIntegration() {
+    void ChaManifoldPreintegration::resetIntegration() {
         deltaTij_ = 0.0;
         deltaXij_ = ChaNavState();
         delRdelBiasOmega_.setZero();
@@ -33,7 +33,7 @@ namespace gtsam {
     }
 
 //------------------------------------------------------------------------------
-    bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
+    bool ChaManifoldPreintegration::equals(const ChaManifoldPreintegration& other,
                                         double tol) const {
         return p_->equals(*other.p_, tol) && std::abs(deltaTij_ - other.deltaTij_) < tol
                && biasHat_.equals(other.biasHat_, tol)
@@ -44,7 +44,7 @@ namespace gtsam {
     }
 
 //------------------------------------------------------------------------------
-    void ManifoldPreintegration::update(const Vector3& measuredVel,
+    void ChaManifoldPreintegration::update(const Vector3& measuredVel,
                                         const Vector3& measuredOmega, const double dt, Matrix6* A, Matrix63* B,
                                         Matrix63* C) {
 
@@ -96,7 +96,7 @@ namespace gtsam {
     }
 
 //------------------------------------------------------------------------------
-    Vector6 ManifoldPreintegration::biasCorrectedDelta(
+    Vector6 ChaManifoldPreintegration::biasCorrectedDelta(
             const chaBias::ConstantBias& bias_i, OptionalJacobian<6, 6> H) const {
         // Correct deltaRij, derivative is delRdelBiasOmega_
         const chaBias::ConstantBias biasIncr = bias_i - biasHat_;

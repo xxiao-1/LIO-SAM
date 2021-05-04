@@ -1,15 +1,5 @@
-/* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
- * Atlanta, Georgia 30332-0415
- * All Rights Reserved
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-
- * See LICENSE for the license information
-
- * -------------------------------------------------------------------------- */
-
-#include "PreintegrationBase.h"
+#include "../../include/ChaPreintegrationBase.h"
 #include <gtsam/base/numericalDerivative.h>
 #include <boost/make_shared.hpp>
 
@@ -18,13 +8,13 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
+ChaPreintegrationBase::ChaPreintegrationBase(const boost::shared_ptr<Params>& p,
                                        const Bias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
 }
 
 //------------------------------------------------------------------------------
-ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
+ostream& operator<<(ostream& os, const ChaPreintegrationBase& pim) {
   os << "    deltaTij " << pim.deltaTij_ << endl;
   os << "    deltaRij.ypr = (" << pim.deltaRij().ypr().transpose() << ")" << endl;
   os << "    deltaPij " << Point3(pim.deltaPij()) << endl;
@@ -34,18 +24,18 @@ ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::print(const string& s) const {
+void ChaPreintegrationBase::print(const string& s) const {
   cout << (s == "" ? s : s + "\n") << *this << endl;
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::resetIntegrationAndSetBias(const Bias& biasHat) {
+void ChaPreintegrationBase::resetIntegrationAndSetBias(const Bias& biasHat) {
 	biasHat_ = biasHat;
 	resetIntegration();
 }
 
 //------------------------------------------------------------------------------
-pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
+pair<Vector3, Vector3> ChaPreintegrationBase::correctMeasurementsBySensorPose(
     const Vector3& unbiasedVel, const Vector3& unbiasedOmega,
     OptionalJacobian<3, 3> correctedVel_H_unbiasedVel,
     OptionalJacobian<3, 3> correctedVel_H_unbiasedOmega,
@@ -91,7 +81,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::integrateMeasurement(const Vector3& measuredVel,
+void ChaPreintegrationBase::integrateMeasurement(const Vector3& measuredVel,
     const Vector3& measuredOmega, double dt) {
   // NOTE(frank): integrateMeasurement always needs to compute the derivatives,
   // even when not of interest to the caller. Provide scratch space here.
@@ -101,7 +91,7 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredVel,
 }
 
 //------------------------------------------------------------------------------
-ChaNavState PreintegrationBase::predict(const ChaNavState& state_i,
+ChaNavState ChaPreintegrationBase::predict(const ChaNavState& state_i,
     const chaBias::ConstantBias& bias_i, OptionalJacobian<6, 6> H1,
     OptionalJacobian<6, 6> H2) const {
   Matrix6 D_biasCorrected_bias;
@@ -127,7 +117,7 @@ ChaNavState PreintegrationBase::predict(const ChaNavState& state_i,
 }
 
 //------------------------------------------------------------------------------
-Vector6 PreintegrationBase::computeError(const ChaNavState& state_i,
+Vector6 ChaPreintegrationBase::computeError(const ChaNavState& state_i,
                                          const ChaNavState& state_j,
                                          const chaBias::ConstantBias& bias_i,
                                          OptionalJacobian<6, 6> H1,
@@ -153,7 +143,7 @@ Vector6 PreintegrationBase::computeError(const ChaNavState& state_i,
 }
 
 //------------------------------------------------------------------------------
-Vector6 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
+Vector6 ChaPreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
      const Pose3& pose_j, const chaBias::ConstantBias& bias_i, OptionalJacobian<6, 6> H1,
     OptionalJacobian<6, 6> H2, OptionalJacobian<6, 6> H3) const {
 

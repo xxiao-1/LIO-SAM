@@ -1,31 +1,11 @@
-/* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
- * Atlanta, Georgia 30332-0415
- * All Rights Reserved
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-
- * See LICENSE for the license information
-
- * -------------------------------------------------------------------------- */
-
-/**
- *  @file  PreintegratedRotation.cpp
- *  @author Luca Carlone
- *  @author Stephen Williams
- *  @author Richard Roberts
- *  @author Vadim Indelman
- *  @author David Jensen
- *  @author Frank Dellaert
- **/
-
-#include "PreintegratedRotation.h"
+#include "../../include/ChaPreintegratedRotation.h"
 
 using namespace std;
 
 namespace gtsam {
 
-void PreintegratedRotationParams::print(const string& s) const {
+void ChaPreintegratedRotationParams::print(const string& s) const {
   cout << (s == "" ? s : s + "\n") << endl;
   cout << "gyroscopeCovariance:\n[\n" << gyroscopeCovariance << "\n]" << endl;
   if (omegaCoriolis)
@@ -33,8 +13,8 @@ void PreintegratedRotationParams::print(const string& s) const {
   if (body_P_sensor) body_P_sensor->print("body_P_sensor");
 }
 
-bool PreintegratedRotationParams::equals(
-    const PreintegratedRotationParams& other, double tol) const {
+bool ChaPreintegratedRotationParams::equals(
+    const ChaPreintegratedRotationParams& other, double tol) const {
   if (body_P_sensor) {
     if (!other.body_P_sensor
         || !assert_equal(*body_P_sensor, *other.body_P_sensor, tol))
@@ -48,19 +28,19 @@ bool PreintegratedRotationParams::equals(
   return equal_with_abs_tol(gyroscopeCovariance, other.gyroscopeCovariance, tol);
 }
 
-void PreintegratedRotation::resetIntegration() {
+void ChaPreintegratedRotation::resetIntegration() {
   deltaTij_ = 0.0;
   deltaRij_ = Rot3();
   delRdelBiasOmega_ = Z_3x3;
 }
 
-void PreintegratedRotation::print(const string& s) const {
+void ChaPreintegratedRotation::print(const string& s) const {
   cout << s;
   cout << "    deltaTij [" << deltaTij_ << "]" << endl;
   cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << endl;
 }
 
-bool PreintegratedRotation::equals(const PreintegratedRotation& other,
+bool ChaPreintegratedRotation::equals(const ChaPreintegratedRotation& other,
     double tol) const {
   return this->matchesParamsWith(other)
       && deltaRij_.equals(other.deltaRij_, tol)
@@ -68,7 +48,7 @@ bool PreintegratedRotation::equals(const PreintegratedRotation& other,
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
 
-Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
+Rot3 ChaPreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
     const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
 
@@ -89,7 +69,7 @@ Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
   return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
 }
 
-void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
+void ChaPreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
     const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
     OptionalJacobian<3, 3> F) {
@@ -112,7 +92,7 @@ void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
       - D_incrR_integratedOmega * deltaT;
 }
 
-Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
+Rot3 ChaPreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
     OptionalJacobian<3, 3> H) const {
   const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasOmegaIncr;
   const Rot3 deltaRij_biascorrected = deltaRij_.expmap(biasInducedOmega,
@@ -122,7 +102,7 @@ Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
   return deltaRij_biascorrected;
 }
 
-Vector3 PreintegratedRotation::integrateCoriolis(const Rot3& rot_i) const {
+Vector3 ChaPreintegratedRotation::integrateCoriolis(const Rot3& rot_i) const {
   if (!p_->omegaCoriolis)
     return Vector3::Zero();
   return rot_i.transpose() * (*p_->omegaCoriolis) * deltaTij_;

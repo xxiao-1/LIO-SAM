@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 
-#include "PreintegrationParams.h"
+#include "../../include/ChaPreintegrationParams.h"
 
 using namespace std;
 
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-void PreintegrationParams::print(const string& s) const {
-  PreintegratedRotationParams::print(s);
+void ChaPreintegrationParams::print(const string& s) const {
+  ChaPreintegratedRotationParams::print(s);
   cout << "wheelspeedsensorCovariance:\n[\n" << wheelspeedsensorCovariance << "\n]"
        << endl;
   cout << "integrationCovariance:\n[\n" << integrationCovariance << "\n]"
@@ -28,10 +28,10 @@ void PreintegrationParams::print(const string& s) const {
 }
 
 //------------------------------------------------------------------------------
-bool PreintegrationParams::equals(const PreintegratedRotationParams& other,
+bool ChaPreintegrationParams::equals(const ChaPreintegratedRotationParams& other,
                                   double tol) const {
-  auto e = dynamic_cast<const PreintegrationParams*>(&other);
-  return e != nullptr && PreintegratedRotationParams::equals(other, tol) &&
+  auto e = dynamic_cast<const ChaPreintegrationParams*>(&other);
+  return e != nullptr && ChaPreintegratedRotationParams::equals(other, tol) &&
          equal_with_abs_tol(wheelspeedsensorCovariance, e->wheelspeedsensorCovariance,
                             tol) &&
          equal_with_abs_tol(integrationCovariance, e->integrationCovariance,

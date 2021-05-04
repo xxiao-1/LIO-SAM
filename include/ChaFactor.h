@@ -10,16 +10,16 @@
  * -------------------------------------------------------------------------- */
 #pragma once
 
-/* GTSAM includes */
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include "ManifoldPreintegration.h"
+#include "ChaManifoldPreintegration.h"
 #include <gtsam/base/debug.h>
 
 
 namespace gtsam {
-typedef ManifoldPreintegration PreintegrationType;
+typedef ChaManifoldPreintegration ChaPreintegrationType;
 
-class GTSAM_EXPORT PreintegratedChaMeasurements: public PreintegrationType {
+class GTSAM_EXPORT PreintegratedChaMeasurements: public ChaPreintegrationType {
 
     friend class ChaFactor;
 
@@ -42,19 +42,19 @@ class GTSAM_EXPORT PreintegratedChaMeasurements: public PreintegrationType {
       *  @param p       Parameters, typically fixed in a single application
       *  @param biasHat Current estimate of acceleration and rotation rate biases
       */
-    PreintegratedChaMeasurements(const boost::shared_ptr <PreintegrationParams> &p,
+    PreintegratedChaMeasurements(const boost::shared_ptr <ChaPreintegrationParams> &p,
                                  const chaBias::ConstantBias &biasHat = chaBias::ConstantBias()) :
-            PreintegrationType(p, biasHat) {
+            ChaPreintegrationType(p, biasHat) {
         preintMeasCov_.setZero();
     }
 
 /**
   *  Construct preintegrated directly from members: base class and preintMeasCov
-  *  @param base               PreintegrationType instance
+  *  @param base               ChaPreintegrationType instance
   *  @param preintMeasCov      Covariance matrix used in noise model.
   */
-    PreintegratedChaMeasurements(const PreintegrationType &base, const Matrix6 &preintMeasCov)
-            : PreintegrationType(base),
+    PreintegratedChaMeasurements(const ChaPreintegrationType &base, const Matrix6 &preintMeasCov)
+            : ChaPreintegrationType(base),
               preintMeasCov_(preintMeasCov) {
     }
 
@@ -103,7 +103,7 @@ class GTSAM_EXPORT PreintegratedChaMeasurements: public PreintegrationType {
     template<class ARCHIVE>
     void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
         namespace bs = ::boost::serialization;
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(ChaPreintegrationType);
         ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
  };

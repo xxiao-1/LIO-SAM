@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 
-#include "ChaFactor.h"
+#include "../../include/ChaFactor.h"
 
 /* External or standard includes */
 #include <ostream>
@@ -23,20 +23,20 @@ using namespace std;
 // Inner class PreintegratedChaMeasurements
 //------------------------------------------------------------------------------
 void PreintegratedChaMeasurements::print(const string& s) const {
-  PreintegrationType::print(s);
+  ChaPreintegrationType::print(s);
   cout << "    preintMeasCov \n[" << preintMeasCov_ << "]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool PreintegratedChaMeasurements::equals(
     const PreintegratedChaMeasurements& other, double tol) const {
-  return PreintegrationType::equals(other, tol)
+  return ChaPreintegrationType::equals(other, tol)
       && equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
 }
 
 //------------------------------------------------------------------------------
 void PreintegratedChaMeasurements::resetIntegration() {
-  PreintegrationType::resetIntegration();
+  ChaPreintegrationType::resetIntegration();
   preintMeasCov_.setZero();
 }
 
@@ -51,7 +51,7 @@ void PreintegratedChaMeasurements::integrateMeasurement(
   // Update preintegrated measurements (also get Jacobian)
   Matrix6 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix63 B, C;
-  PreintegrationType::update(measureVel, measuredOmega, dt, &A, &B, &C);
+  ChaPreintegrationType::update(measureVel, measuredOmega, dt, &A, &B, &C);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a

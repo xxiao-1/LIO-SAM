@@ -1,7 +1,7 @@
 //
 // Created by xxiao on 2020/11/17.
 //
-#include "dynamic_factor.h"
+#include "../../include/dynamic_factor.h"
 #include <ostream>
 #include <gtsam/geometry/Utility.h>
 

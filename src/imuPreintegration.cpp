@@ -1,6 +1,7 @@
 #include "utility.h"
-#include "factor/dynamic_factor.h"
-
+#include "../include/dynamic_factor.h"
+#include "../include/ChaFactor.h"
+#include "../include/ChaBias.h"
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/PriorFactor.h>

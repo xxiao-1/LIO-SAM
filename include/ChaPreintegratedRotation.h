@@ -18,24 +18,24 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct GTSAM_EXPORT PreintegratedRotationParams {
+struct GTSAM_EXPORT ChaPreintegratedRotationParams {
   Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
   boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
 
-  PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
+  ChaPreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
-  PreintegratedRotationParams(const Matrix3& gyroscope_covariance,
+  ChaPreintegratedRotationParams(const Matrix3& gyroscope_covariance,
                               boost::optional<Vector3> omega_coriolis)
     : gyroscopeCovariance(gyroscope_covariance) {
       if (omega_coriolis)
         omegaCoriolis.reset(omega_coriolis.get());
   }
 
-  virtual ~PreintegratedRotationParams() {}
+  virtual ~ChaPreintegratedRotationParams() {}
 
   virtual void print(const std::string& s) const;
-  virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
+  virtual bool equals(const ChaPreintegratedRotationParams& other, double tol=1e-9) const;
 
   void setGyroscopeCovariance(const Matrix3& cov)   { gyroscopeCovariance = cov;  }
   void setOmegaCoriolis(const Vector3& omega)       { omegaCoriolis.reset(omega); }
@@ -61,22 +61,19 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
       ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
     }
   }
-#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
-  using _eigen_aligned_allocator_trait = void;
 public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 
 /**
- * PreintegratedRotation is the base class for all PreintegratedMeasurements
+ * ChaPreintegratedRotation is the base class for all PreintegratedMeasurements
  * classes (in AHRSFactor, ImuFactor, and CombinedImuFactor).
  * It includes the definitions of the preintegrated rotation.
  */
-class GTSAM_EXPORT PreintegratedRotation {
+class GTSAM_EXPORT ChaPreintegratedRotation {
  public:
-  typedef PreintegratedRotationParams Params;
+  typedef ChaPreintegratedRotationParams Params;
 
  protected:
   /// Parameters
@@ -87,19 +84,19 @@ class GTSAM_EXPORT PreintegratedRotation {
   Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
   /// Default constructor for serialization
-  PreintegratedRotation() {}
+  ChaPreintegratedRotation() {}
 
  public:
   /// @name Constructors
   /// @{
 
   /// Default constructor, resets integration to zero
-  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
+  explicit ChaPreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
     resetIntegration();
   }
 
   /// Explicit initialization of all class members
-  PreintegratedRotation(const boost::shared_ptr<Params>& p,
+  ChaPreintegratedRotation(const boost::shared_ptr<Params>& p,
                         double deltaTij, const Rot3& deltaRij,
                         const Matrix3& delRdelBiasOmega)
       : p_(p), deltaTij_(deltaTij), deltaRij_(deltaRij), delRdelBiasOmega_(delRdelBiasOmega) {}
@@ -113,7 +110,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   void resetIntegration();
 
   /// check parameters equality: checks whether shared pointer points to same Params object.
-  bool matchesParamsWith(const PreintegratedRotation& other) const {
+  bool matchesParamsWith(const ChaPreintegratedRotation& other) const {
     return p_ == other.p_;
   }
   /// @}
@@ -137,7 +134,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @name Testable
   /// @{
   void print(const std::string& s) const;
-  bool equals(const PreintegratedRotation& other, double tol) const;
+  bool equals(const ChaPreintegratedRotation& other, double tol) const;
   /// @}
 
   /// @name Main functionality
@@ -178,11 +175,11 @@ class GTSAM_EXPORT PreintegratedRotation {
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
   public:
-	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+	  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
 template <>
-struct traits<PreintegratedRotation> : public Testable<PreintegratedRotation> {};
+struct traits<ChaPreintegratedRotation> : public Testable<ChaPreintegratedRotation> {};
 
 }  /// namespace gtsam

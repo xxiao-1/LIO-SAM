@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 
-#include "ChaNavState.h"
+#include "../../include/ChaNavState.h"
 
 using namespace std;
 
