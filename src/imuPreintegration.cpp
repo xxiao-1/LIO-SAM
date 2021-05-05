@@ -273,7 +273,7 @@ public:
                 (gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());// assume zero initial bias
         chaIntegratorCha_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for IMU message thread
         chaIntegratorOpt_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for optimization
-
+        std::cout<<"1------------------------init chassis params end"
     }
 
     void resetOptimization() {
@@ -297,7 +297,7 @@ public:
 
     void chassisHandler(const lio_sam::chassis_data::ConstPtr &chassis_msg) {
         std::lock_guard <std::mutex> lock(mtx);
-        DynamicMeasurement thisChassis = vehicleDynamicsModel1(chassis_msg->header.stamp.toSec(), chassis_msg->Velocity,
+        DynamicMeasurement thisChassis = vehicleDynamicsModel(chassis_msg->header.stamp.toSec(), chassis_msg->Velocity,
                                                                chassis_msg->SteeringAngle);
         chaQueOpt.push_back(thisChassis);
         chaQueCha.push_back(thisChassis);
@@ -311,26 +311,30 @@ public:
         // integrate this single chassis message
         chaIntegratorCha_->integrateMeasurement(
                 thisChassis.velocity,thisChassis.angle, dt);
-        // predict odometry
-        gtsam::ChaNavState currentChaState = chaIntegratorCha_->predict(prevStateCha, prevBiasCha);// TODO
 
-        // publish odometry
-        nav_msgs::Odometry odometryCha;
-        odometryCha.header.stamp = chassis_msg->header.stamp;
-        odometryCha.header.frame_id = odometryFrame;
-        odometryCha.child_frame_id = "odom_cha";
+        // predict state and publish odometry
+        const bool CHASSIS_ODOMETRY=false;
+        if(CHASSIS_ODOMETRY){
+            // predict odometry
+            gtsam::ChaNavState currentChaState = chaIntegratorCha_->predict(prevStateCha, prevBiasCha);// TODO
 
-        // transform cha pose to lidar
-        gtsam::Pose3 chaPose = gtsam::Pose3(currentChaState.quaternion(), currentChaState.position());
-        gtsam::Pose3 lidarPose = chaPose.compose(imu2Lidar); //平移变换
+            // publish odometry
+            nav_msgs::Odometry odometryCha;
+            odometryCha.header.stamp = chassis_msg->header.stamp;
+            odometryCha.header.frame_id = odometryFrame;
+            odometryCha.child_frame_id = "odom_cha";
 
-        odometryCha.pose.pose.position.x = lidarPose.translation().x();
-        odometryCha.pose.pose.position.y = lidarPose.translation().y();
-        odometryCha.pose.pose.position.z = lidarPose.translation().z();
-        odometryCha.pose.pose.orientation.x = lidarPose.rotation().toQuaternion().x();
-        odometryCha.pose.pose.orientation.y = lidarPose.rotation().toQuaternion().y();
-        odometryCha.pose.pose.orientation.z = lidarPose.rotation().toQuaternion().z();
-        odometryCha.pose.pose.orientation.w = lidarPose.rotation().toQuaternion().w();
+            // transform cha pose to lidar
+            gtsam::Pose3 chaPose = gtsam::Pose3(currentChaState.quaternion(), currentChaState.position());
+            gtsam::Pose3 lidarPose = chaPose.compose(imu2Lidar); //平移变换
+
+            odometryCha.pose.pose.position.x = lidarPose.translation().x();
+            odometryCha.pose.pose.position.y = lidarPose.translation().y();
+            odometryCha.pose.pose.position.z = lidarPose.translation().z();
+            odometryCha.pose.pose.orientation.x = lidarPose.rotation().toQuaternion().x();
+            odometryCha.pose.pose.orientation.y = lidarPose.rotation().toQuaternion().y();
+            odometryCha.pose.pose.orientation.z = lidarPose.rotation().toQuaternion().z();
+            odometryCha.pose.pose.orientation.w = lidarPose.rotation().toQuaternion().w();
 
 //        odometryCha.twist.twist.linear.x = (1+prevBiasCha.wheelspeed().x)*(thisChassis.velocity.x);
 //        odometryCha.twist.twist.linear.y = (1+prevBiasCha.wheelspeed().y)*(thisChassis.velocity.y);
@@ -338,20 +342,20 @@ public:
 //        odometryCha.twist.twist.angular.x = thisChassis.angle.x + prevBiasCha.gyroscope().x();
 //        odometryCha.twist.twist.angular.y = thisChassis.angle.y + prevBiasCha.gyroscope().y();
 //        odometryCha.twist.twist.angular.z = thisChassis.angle.z + prevBiasCha.gyroscope().z();
-        odometryCha.twist.twist.linear.x = 0;
-        odometryCha.twist.twist.linear.y = 0;
-        odometryCha.twist.twist.linear.z =0;
-        odometryCha.twist.twist.angular.x = 0;
-        odometryCha.twist.twist.angular.y = 0;
-        odometryCha.twist.twist.angular.z = 0;
-        pubChaOdometry.publish(odometryCha);
-
+            odometryCha.twist.twist.linear.x = 0;
+            odometryCha.twist.twist.linear.y = 0;
+            odometryCha.twist.twist.linear.z =0;
+            odometryCha.twist.twist.angular.x = 0;
+            odometryCha.twist.twist.angular.y = 0;
+            odometryCha.twist.twist.angular.z = 0;
+            pubChaOdometry.publish(odometryCha);
+        }
     }
 
-    DynamicMeasurement vehicleDynamicsModel1(double t, double Velocity, double Steer) {
+    DynamicMeasurement vehicleDynamicsModel(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-//        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double steer = 0, bias = 0;
         double beta;
         const double k1 = 30082 * 2;//front tyre
@@ -440,11 +444,13 @@ public:
             prevBiasCha_ = gtsam::chaBias::ConstantBias();
             gtsam::PriorFactor <gtsam::chaBias::ConstantBias> priorBiasCha(K(0), prevBiasCha_, priorBiasNoise);
             graphFactors.add(priorBiasCha);
+            std::cout<<"2------------------add init chassis bias factor"
             // add values
             graphValues.insert(X(0), prevPose_);
             graphValues.insert(V(0), prevVel_); //TODO USING CHASSIS?
             graphValues.insert(B(0), prevBias_);
             graphValues.insert(K(0), prevBiasCha_);
+            std::cout<<"2.5------------------add init chassis bias value"
             // optimize once
             optimizer.update(graphFactors, graphValues);
             graphFactors.resize(0);
@@ -455,6 +461,7 @@ public:
 
             chaIntegratorCha_->resetIntegrationAndSetBias(prevBiasCha_);
             chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
+            std::cout<<"2.9------------------chassis resetIntegrationAndSetBias"
 
             key = 1;
             systemInitialized = true;
@@ -520,7 +527,7 @@ public:
                 break;
         }
 
-        // 1. integrate chassis data and optimize
+        // 2. integrate chassis data and optimize
         while (!chaQueOpt.empty()) {
             // pop and integrate imu data that is between two optimizations
             DynamicMeasurement *thisChassis= &chaQueOpt.front();
@@ -535,7 +542,7 @@ public:
             } else
                 break;
         }
-
+        std::cout<<"3-------------------integrated chassis end"<<std::endl;
         // add imu factor to graph
         const gtsam::PreintegratedImuMeasurements &preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements &>(*imuIntegratorOpt_);
         gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
@@ -570,9 +577,10 @@ public:
                                                                        gtsam::noiseModel::Diagonal::Sigmas(
                                                                                sqrt(chaIntegratorOpt_->deltaTij()) *
                                                                                noiseModelBetweenBias)));
+            std::cout<<"3.5-------------------add chassis factor"<<std::endl;
             // insert predicted values
             graphValues.insert(K(key), prevBiasCha_);
-            std::cout << "add chassis factor" << std::endl;
+            std::cout<<"3.9-------------------add chassis bias value"<<std::endl;
         }
 
 
@@ -586,7 +594,7 @@ public:
         prevPose_ = result.at<gtsam::Pose3>(X(key));
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
-        // std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
+        std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
         prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
         // Reset the optimization preintegration object.
