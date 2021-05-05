@@ -47,12 +47,12 @@ void PreintegratedChaMeasurements::integrateMeasurement(
     throw std::runtime_error(
         "PreintegratedChaMeasurements::integrateMeasurement: dt <=0");
   }
-
+    std::cout<<"integrateMeasurement函数内部--0"<<std::endl;
   // Update preintegrated measurements (also get Jacobian)
   Matrix6 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix63 B, C;
   ChaPreintegrationType::update(measureVel, measuredOmega, dt, &A, &B, &C);
-
+        std::cout<<"integrateMeasurement函数内部--1 update 之后"<<std::endl;
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a
   // prediction phase in EKF
@@ -62,6 +62,7 @@ void PreintegratedChaMeasurements::integrateMeasurement(
   const Matrix3& vCov = p().wheelspeedsensorCovariance;
   const Matrix3& wCov = p().gyroscopeCovariance;
   const Matrix3& iCov = p().integrationCovariance;
+        std::cout<<"integrateMeasurement函数内部--2 协方差之后"<<std::endl;
 
   // (1/dt) allows to pass from continuous time noise to discrete time noise
   preintMeasCov_ = A * preintMeasCov_ * A.transpose();
@@ -70,6 +71,7 @@ void PreintegratedChaMeasurements::integrateMeasurement(
 
   // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3
   preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
+        std::cout<<"integrateMeasurement函数内部--3 结束"<<std::endl;
 }
 
 //------------------------------------------------------------------------------

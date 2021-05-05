@@ -16,6 +16,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <iosfwd>
 #include <boost/serialization/nvp.hpp>
+#include <iostream>
 
 namespace gtsam {
 
@@ -64,11 +65,19 @@ namespace gtsam {
                 Vector3 correctWheelSpeed(const Vector3& measurement,
                 OptionalJacobian<3, 6> H1 = boost::none,
                 OptionalJacobian<3, 3> H2 = boost::none) const {
-                    const Matrix3 mea=measurement.asDiagonal();
-                    if (H1) (*H1) << mea, Z_3x3;
-                    if (H2) (*H2) << I_3x3;
-                    *H2 += biasVel_.asDiagonal();
+                    std::cout<<"correctWheelSpeed: begin"<<std::endl;
                     Vector3 tmp=measurement.array()*biasVel_.array();
+                    std::cout<<"correctWheelSpeed: tmp"<<tmp<<std::endl;
+                    if (H1) (*H1) << measurement[0],0,0,0,0,0,
+                        0,measurement[1],0,0,0,0,
+                        0,0,measurement[2],0,0,0;
+                    std::cout<<"correctWheelSpeed: H1"<<H1<<std::endl;
+                    if (H2) (*H2) << 1+biasVel_[0],0,0,
+                    0,1+biasVel_[1],0,
+                    0,0,1+biasVel_[2];
+                    std::cout<<"correctWheelSpeed: H2"<<H2<<std::endl;
+
+                    std::cout<<"correctWheelSpeed: end"<<std::endl;
                     return measurement + tmp ;
                 }
 
@@ -76,8 +85,10 @@ namespace gtsam {
                 Vector3 correctGyroscope(const Vector3& measurement,
                 OptionalJacobian<3, 6> H1 = boost::none,
                 OptionalJacobian<3, 3> H2 = boost::none) const {
+                    std::cout<<"correctGyroscope: begin"<<std::endl;
                     if (H1) (*H1) << Z_3x3, -I_3x3;
                     if (H2) (*H2) << I_3x3;
+                    std::cout<<"correctGyroscope: end"<<std::endl;
                     return measurement - biasGyro_;
                 }
 

@@ -8,8 +8,8 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-ChaPreintegrationBase::ChaPreintegrationBase(const boost::shared_ptr<Params>& p,
-                                       const Bias& biasHat)
+ChaPreintegrationBase::ChaPreintegrationBase(const boost::shared_ptr<ChaParams>& p,
+                                       const ChaBias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
 }
 
@@ -29,7 +29,7 @@ void ChaPreintegrationBase::print(const string& s) const {
 }
 
 //------------------------------------------------------------------------------
-void ChaPreintegrationBase::resetIntegrationAndSetBias(const Bias& biasHat) {
+void ChaPreintegrationBase::resetIntegrationAndSetBias(const ChaBias& biasHat) {
 	biasHat_ = biasHat;
 	resetIntegration();
 }

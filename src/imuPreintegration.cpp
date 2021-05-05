@@ -273,7 +273,7 @@ public:
                 (gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());// assume zero initial bias
         chaIntegratorCha_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for IMU message thread
         chaIntegratorOpt_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for optimization
-        std::cout<<"1------------------------init chassis params end"
+        std::cout<<"1------------------------init chassis params end"<<std::endl;
     }
 
     void resetOptimization() {
@@ -444,14 +444,16 @@ public:
             prevBiasCha_ = gtsam::chaBias::ConstantBias();
             gtsam::PriorFactor <gtsam::chaBias::ConstantBias> priorBiasCha(K(0), prevBiasCha_, priorBiasNoise);
             graphFactors.add(priorBiasCha);
-            std::cout<<"2------------------add init chassis bias factor"
+            std::cout<<"2------------------add init chassis bias factor"<<std::endl;
             // add values
             graphValues.insert(X(0), prevPose_);
             graphValues.insert(V(0), prevVel_); //TODO USING CHASSIS?
             graphValues.insert(B(0), prevBias_);
             graphValues.insert(K(0), prevBiasCha_);
-            std::cout<<"2.5------------------add init chassis bias value"
+            std::cout<<"2.5------------------add init chassis bias value"<<std::endl;
             // optimize once
+            std::cout<<"first optimization begin "<<std::endl;
+//            std::cout<<"first optimization graphValues "<<graphValues<<std::endl;
             optimizer.update(graphFactors, graphValues);
             graphFactors.resize(0);
             graphValues.clear();
@@ -461,7 +463,7 @@ public:
 
             chaIntegratorCha_->resetIntegrationAndSetBias(prevBiasCha_);
             chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
-            std::cout<<"2.9------------------chassis resetIntegrationAndSetBias"
+            std::cout<<"2.9------------------chassis resetIntegrationAndSetBias"<<std::endl;
 
             key = 1;
             systemInitialized = true;
@@ -507,7 +509,7 @@ public:
             key = 1;
         }
 
-
+        std::cout<<"3.0-----second graph begin "<<std::endl;
         // 1. integrate imu data and optimize
         while (!imuQueOpt.empty()) {
             // pop and integrate imu data that is between two optimizations
@@ -526,17 +528,22 @@ public:
             } else
                 break;
         }
-
+        std::cout<<"3.01-----add imu end "<<std::endl;
         // 2. integrate chassis data and optimize
         while (!chaQueOpt.empty()) {
-            // pop and integrate imu data that is between two optimizations
+            // pop and integrate chassis data that is between two optimizations
             DynamicMeasurement *thisChassis= &chaQueOpt.front();
             double chaTime = thisChassis->time;
+            std::cout<<"3.02-----the chaTime is "<<chaTime<<std::endl;
             if (chaTime < currentCorrectionTime - delta_t) {
                 double dt = (lastChaT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChaT_opt);
-                chaIntegratorOpt_->integrateMeasurement(
-                       thisChassis->velocity, thisChassis->angle, dt);
-
+                std::cout<<"3.02-----the dt is "<<dt<<std::endl;
+                gtsam::Vector3 v=thisChassis->velocity;
+                std::cout<<"velocity is "<<v<<std::endl;
+                gtsam::Vector3 ang=thisChassis->angle;
+                std::cout<<"angle is "<<ang<<std::endl;
+                chaIntegratorOpt_->integrateMeasurement(v, ang, dt);
+                std::cout<<"3.03-----the integrateMeasurement end"<<std::endl;
                 lastChaT_opt = chaTime;
                 chaQueOpt.pop_front();
             } else
@@ -571,6 +578,7 @@ public:
             const gtsam::PreintegratedChaMeasurements &preint_cha = dynamic_cast<const gtsam::PreintegratedChaMeasurements &>(*chaIntegratorOpt_);
             gtsam::ChaFactor cha_factor(X(key - 1), X(key), K(key - 1), preint_cha);
             graphFactors.add(cha_factor);
+            cha_factor.print();
             // add cha bias between factor
             graphFactors.add(
                     gtsam::BetweenFactor<gtsam::chaBias::ConstantBias>(K(key - 1), K(key), gtsam::chaBias::ConstantBias(),
@@ -580,7 +588,7 @@ public:
             std::cout<<"3.5-------------------add chassis factor"<<std::endl;
             // insert predicted values
             graphValues.insert(K(key), prevBiasCha_);
-            std::cout<<"3.9-------------------add chassis bias value"<<std::endl;
+            std::cout<<"3.6-------------------add chassis bias value"<<std::endl;
         }
 
 

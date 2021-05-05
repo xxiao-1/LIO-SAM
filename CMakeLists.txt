@@ -97,7 +97,7 @@ add_library(lio_lib
 		src/factor/ChaPreintegratedRotation.cpp
 		src/factor/ChaPreintegrationParams.cpp
 		src/factor/ChaPreintegrationBase.cpp)
-target_link_libraries(lio_lib  include ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
+target_link_libraries(lio_lib ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} gtsam)
 
 # Range Image Projection
 add_executable(${PROJECT_NAME}_imageProjection src/imageProjection.cpp)

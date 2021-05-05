@@ -32,14 +32,14 @@ namespace gtsam {
  */
 class GTSAM_EXPORT ChaPreintegrationBase {
  public:
-  typedef chaBias::ConstantBias Bias;
-  typedef ChaPreintegrationParams Params;
+  typedef chaBias::ConstantBias ChaBias;
+  typedef ChaPreintegrationParams ChaParams;
 
  protected:
-  boost::shared_ptr<Params> p_;
+  boost::shared_ptr<ChaParams> p_;
 
   /// Acceleration and gyro bias used for preintegration
-  Bias biasHat_;
+  ChaBias biasHat_;
 
   /// Time interval from i to j
   double deltaTij_;
@@ -59,7 +59,7 @@ class GTSAM_EXPORT ChaPreintegrationBase {
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  ChaPreintegrationBase(const boost::shared_ptr<Params>& p,
+  ChaPreintegrationBase(const boost::shared_ptr<ChaParams>& p,
       const chaBias::ConstantBias& biasHat = chaBias::ConstantBias());
 
   /// @}
@@ -72,20 +72,20 @@ class GTSAM_EXPORT ChaPreintegrationBase {
   /// @name Basic utilities
   /// @{
   /// Re-initialize PreintegratedMeasurements and set new bias
-  void resetIntegrationAndSetBias(const Bias& biasHat);
+  void resetIntegrationAndSetBias(const ChaBias& biasHat);
 
-  /// check parameters equality: checks whether shared pointer points to same Params object.
+  /// check parameters equality: checks whether shared pointer points to same ChaParams object.
   bool matchesParamsWith(const ChaPreintegrationBase& other) const {
     return p_.get() == other.p_.get();
   }
 
   /// shared pointer to params
-  const boost::shared_ptr<Params>& params() const {
+  const boost::shared_ptr<ChaParams>& params() const {
     return p_;
   }
 
   /// const reference to params
-  Params& p() const {
+  ChaParams& p() const {
     return *p_;
   }
 

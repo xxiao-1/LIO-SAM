@@ -17,7 +17,7 @@
 namespace gtsam {
 
 /// Parameters for pre-integration:
-/// Usage: Create just a single Params and pass a shared pointer to the constructor
+/// Usage: Create just a single ChaParams and pass a shared pointer to the constructor
 struct GTSAM_EXPORT ChaPreintegratedRotationParams {
   Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
@@ -73,11 +73,11 @@ public:
  */
 class GTSAM_EXPORT ChaPreintegratedRotation {
  public:
-  typedef ChaPreintegratedRotationParams Params;
+  typedef ChaPreintegratedRotationParams ChaParams;
 
  protected:
   /// Parameters
-  boost::shared_ptr<Params> p_;
+  boost::shared_ptr<ChaParams> p_;
 
   double deltaTij_;           ///< Time interval from i to j
   Rot3 deltaRij_;             ///< Preintegrated relative orientation (in frame i)
@@ -91,12 +91,12 @@ class GTSAM_EXPORT ChaPreintegratedRotation {
   /// @{
 
   /// Default constructor, resets integration to zero
-  explicit ChaPreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
+  explicit ChaPreintegratedRotation(const boost::shared_ptr<ChaParams>& p) : p_(p) {
     resetIntegration();
   }
 
   /// Explicit initialization of all class members
-  ChaPreintegratedRotation(const boost::shared_ptr<Params>& p,
+  ChaPreintegratedRotation(const boost::shared_ptr<ChaParams>& p,
                         double deltaTij, const Rot3& deltaRij,
                         const Matrix3& delRdelBiasOmega)
       : p_(p), deltaTij_(deltaTij), deltaRij_(deltaRij), delRdelBiasOmega_(delRdelBiasOmega) {}
@@ -109,7 +109,7 @@ class GTSAM_EXPORT ChaPreintegratedRotation {
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
-  /// check parameters equality: checks whether shared pointer points to same Params object.
+  /// check parameters equality: checks whether shared pointer points to same ChaParams object.
   bool matchesParamsWith(const ChaPreintegratedRotation& other) const {
     return p_ == other.p_;
   }
@@ -117,7 +117,7 @@ class GTSAM_EXPORT ChaPreintegratedRotation {
 
   /// @name Access instance variables
   /// @{
-  const boost::shared_ptr<Params>& params() const {
+  const boost::shared_ptr<ChaParams>& params() const {
     return p_;
   }
   const double& deltaTij() const {

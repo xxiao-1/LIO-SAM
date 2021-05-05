@@ -38,7 +38,7 @@ namespace gtsam {
      *  @param p    Parameters, typically fixed in a single application
      *  @param bias Current estimate of acceleration and rotation rate biases
      */
-    ChaManifoldPreintegration(const boost::shared_ptr<Params>& p,
+    ChaManifoldPreintegration(const boost::shared_ptr<ChaParams>& p,
                            const chaBias::ConstantBias& biasHat = chaBias::ConstantBias());
 
     /// @}
