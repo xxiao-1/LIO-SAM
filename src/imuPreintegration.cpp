@@ -590,6 +590,7 @@ public:
             // insert predicted values
             graphValues.insert(K(key), prevBiasCha_);
             std::cout<<"3.6-------------------add chassis bias value"<<std::endl;
+
         }
 
         // optimize
