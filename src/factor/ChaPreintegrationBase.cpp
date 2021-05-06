@@ -129,7 +129,8 @@ Vector6 ChaPreintegrationBase::computeError(const ChaNavState& state_i,
   //std::cout<<"computeError before predict ----1"<<std::endl;
   ChaNavState predictedState_j = predict(
       state_i, bias_i, H1 ? &D_predict_state_i : 0, H3 ? &D_predict_bias_i : 0);
-  //std::cout<<"computeError after predict ----2"<<std::endl;
+  std::cout<<"state_j is "<<state_j<<std::endl;
+  std::cout<<"predictedState_j is "<<predictedState_j<<std::endl;
   // Calculate error
   Matrix6 D_error_state_j, D_error_predict;
   Vector6 error =
@@ -161,7 +162,7 @@ Vector6 ChaPreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   Matrix6 D_error_state_i, D_error_state_j;
   Vector6 error = computeError(state_i, state_j, bias_i,
                          H1 ? &D_error_state_i : 0, H2? &D_error_state_j : 0, H3);
-        //std::cout<<"computeErrorAndJacobians computeError end--2"<<std::endl;
+  std::cout<<"chassis error is"<<error<<std::endl;
 
   // Separate out derivatives in terms of 5 arguments
   // Note that doing so requires special treatment of velocities, as when treated as

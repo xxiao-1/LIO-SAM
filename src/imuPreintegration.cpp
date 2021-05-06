@@ -578,7 +578,7 @@ public:
         if (useChassis) {
             const gtsam::PreintegratedChaMeasurements &preint_cha = dynamic_cast<const gtsam::PreintegratedChaMeasurements &>(*chaIntegratorOpt_);
             gtsam::ChaFactor cha_factor(X(key - 1), X(key), K(key - 1), preint_cha);
-//            graphFactors.add(cha_factor);
+            graphFactors.add(cha_factor);
             cha_factor.print();
             // add cha bias between factor
             graphFactors.add(
