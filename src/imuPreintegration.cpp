@@ -273,7 +273,7 @@ public:
                 (gtsam::Vector(6) << 0, 0, 0, 0, 0, 0).finished());// assume zero initial bias
         chaIntegratorCha_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for IMU message thread
         chaIntegratorOpt_ = new gtsam::PreintegratedChaMeasurements(p_cha, prior_cha_bias); // setting up the IMU integration for optimization
-        std::cout<<"1------------------------init chassis params end"<<std::endl;
+        // std::cout<<"1------------------------init chassis params end"<<std::endl;
     }
 
     void resetOptimization() {
@@ -355,7 +355,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        // std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double steer = 0, bias = 0;
         double beta;
         const double k1 = 30082 * 2;//front tyre
@@ -378,7 +378,7 @@ public:
         chassis_out.velocity = {vx, vy, vz};
         //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
         //chassis_out.angle = {rx, ry, rz};
-        //std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
+        //// std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
 //        ROS_INFO("chassis angular_vel is %f,%f,%f",rx,ry,rz);//right,front,yaw
         // use latest imu angle velocity (imu msg time - chassis msg time = -0.003825s)
         chassis_out.angle = {tmp_imu_ang_x, tmp_imu_ang_y, tmp_imu_ang_z};
@@ -444,16 +444,16 @@ public:
             prevBiasCha_ = gtsam::chaBias::ConstantBias();
             gtsam::PriorFactor <gtsam::chaBias::ConstantBias> priorBiasCha(K(0), prevBiasCha_, priorBiasNoise);
             graphFactors.add(priorBiasCha);
-            std::cout<<"2------------------add init chassis bias factor"<<std::endl;
+            // std::cout<<"2------------------add init chassis bias factor"<<std::endl;
             // add values
             graphValues.insert(X(0), prevPose_);
             graphValues.insert(V(0), prevVel_); //TODO USING CHASSIS?
             graphValues.insert(B(0), prevBias_);
             graphValues.insert(K(0), prevBiasCha_);
-            std::cout<<"2.5------------------add init chassis bias value"<<std::endl;
+            // std::cout<<"2.5------------------add init chassis bias value"<<std::endl;
             // optimize once
-            std::cout<<"first optimization begin "<<std::endl;
-//            std::cout<<"first optimization graphValues "<<graphValues<<std::endl;
+            // std::cout<<"first optimization begin "<<std::endl;
+//            // std::cout<<"first optimization graphValues "<<graphValues<<std::endl;
             optimizer.update(graphFactors, graphValues);
             graphFactors.resize(0);
             graphValues.clear();
@@ -463,7 +463,7 @@ public:
 
             chaIntegratorCha_->resetIntegrationAndSetBias(prevBiasCha_);
             chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
-            std::cout<<"2.9------------------chassis resetIntegrationAndSetBias"<<std::endl;
+            // std::cout<<"2.9------------------chassis resetIntegrationAndSetBias"<<std::endl;
 
             key = 1;
             systemInitialized = true;
@@ -509,7 +509,7 @@ public:
             key = 1;
         }
 
-        std::cout<<"3.0-----second graph begin "<<std::endl;
+        // std::cout<<"3.0-----second graph begin "<<std::endl;
         // 1. integrate imu data and optimize
         while (!imuQueOpt.empty()) {
             // pop and integrate imu data that is between two optimizations
@@ -528,33 +528,33 @@ public:
             } else
                 break;
         }
-        std::cout<<"3.01-----add imu end "<<std::endl;
+        // std::cout<<"3.01-----add imu end "<<std::endl;
         // 2. integrate chassis data and optimize
         while (!chaQueOpt.empty()) {
             // pop and integrate chassis data that is between two optimizations
             DynamicMeasurement *thisChassis= &chaQueOpt.front();
             double chaTime = thisChassis->time;
-            std::cout<<"3.02-----the chaTime is "<<chaTime<<std::endl;
+            // std::cout<<"3.02-----the chaTime is "<<chaTime<<std::endl;
             if (chaTime < currentCorrectionTime - delta_t) {
                 double dt = (lastChaT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChaT_opt);
-                std::cout<<"3.02-----the dt is "<<dt<<std::endl;
+                // std::cout<<"3.02-----the dt is "<<dt<<std::endl;
                 gtsam::Vector3 v=thisChassis->velocity;
-                std::cout<<"velocity is "<<v<<std::endl;
+                // std::cout<<"velocity is "<<v<<std::endl;
                 gtsam::Vector3 ang=thisChassis->angle;
-                std::cout<<"angle is "<<ang<<std::endl;
+                // std::cout<<"angle is "<<ang<<std::endl;
                 chaIntegratorOpt_->integrateMeasurement(v, ang, dt);
-                std::cout<<"3.03-----the integrateMeasurement end"<<std::endl;
+                // std::cout<<"3.03-----the integrateMeasurement end"<<std::endl;
                 lastChaT_opt = chaTime;
                 chaQueOpt.pop_front();
             } else
                 break;
         }
-        std::cout<<"3-------------------integrated chassis end"<<std::endl;
+       // std::cout<<"3-------------------integrated chassis end"<<std::endl;
         // add imu factor to graph
         const gtsam::PreintegratedImuMeasurements &preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements &>(*imuIntegratorOpt_);
         gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
         graphFactors.add(imu_factor);
-
+        imu_factor.print("imufactor");
         // add imu bias between factor
         graphFactors.add(
                 gtsam::BetweenFactor<gtsam::imuBias::ConstantBias>(B(key - 1), B(key), gtsam::imuBias::ConstantBias(),
@@ -586,10 +586,10 @@ public:
                                                                        gtsam::noiseModel::Diagonal::Sigmas(
                                                                                sqrt(chaIntegratorOpt_->deltaTij()) *
                                                                                noiseModelBetweenBias)));
-            std::cout<<"3.5-------------------add chassis factor"<<std::endl;
+//            // std::cout<<"3.5-------------------add chassis factor"<<std::endl;
             // insert predicted values
             graphValues.insert(K(key), prevBiasCha_);
-            std::cout<<"3.6-------------------add chassis bias value"<<std::endl;
+//            // std::cout<<"3.6-------------------add chassis bias value"<<std::endl;
 
         }
 
@@ -603,7 +603,7 @@ public:
         prevPose_ = result.at<gtsam::Pose3>(X(key));
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
-        std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
+         std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
         prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
         // Reset the optimization preintegration object.
@@ -624,17 +624,17 @@ public:
 //        Eigen::Vector3d Piimu=propState_.position();
 //        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
 //        Eigen::Quaterniond delta_q=chassisIntegratorOpt_.getDeltaQ();
-//       // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
-//        std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
-//        std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
-//        std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
-//        std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
+//       // // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
+//        // std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
+//        // std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
+//        // std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
+//        // std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
 //        Eigen::Matrix<double, 6, 1> residuals;
 //        residuals.setZero();
 ////        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
 //        residuals.block<3, 1>(0, 0) = (Pj - Pi) - Qi*delta_p;
 //        residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-//        std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
+//        // std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
 
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;

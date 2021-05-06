@@ -46,19 +46,19 @@ namespace gtsam {
 //------------------------------------------------------------------------------
     void ChaManifoldPreintegration::update(const Vector3& measuredVel,  const Vector3& measuredOmega, const double dt, Matrix6* A, Matrix63* B,
                                         Matrix63* C) {
-        std::cout<<"update: measuredVel "<<measuredVel<<std::endl;
-        std::cout<<"update: measuredOmega "<<measuredOmega<<std::endl;
+        //std::cout<<"update: measuredVel "<<measuredVel<<std::endl;
+        //std::cout<<"update: measuredOmega "<<measuredOmega<<std::endl;
         // Correct for bias in the sensor frame
         Vector3 vel = biasHat_.correctWheelSpeed(measuredVel);
-        std::cout<<"update: correctWheelSpeed "<<vel<<std::endl;
+        //std::cout<<"update: correctWheelSpeed "<<vel<<std::endl;
         Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
-        std::cout<<"update: correctGyroscope "<<omega<<std::endl;
+        //std::cout<<"update: correctGyroscope "<<omega<<std::endl;
         // Possibly correct for sensor pose
         Matrix3 D_correctedVel_vel, D_correctedVel_omega, D_correctedOmega_omega;
         if (p().body_P_sensor)
             boost::tie(vel, omega) = correctMeasurementsBySensorPose(vel, omega,
                                                                      D_correctedVel_vel, D_correctedVel_omega, D_correctedOmega_omega);
-        std::cout<<"update: correctMeasurementsBySensorPose end "<<std::endl;
+        //std::cout<<"update: correctMeasurementsBySensorPose end "<<std::endl;
         // Save current rotation for updating Jacobians
         const Rot3 oldRij = deltaXij_.attitude();
 

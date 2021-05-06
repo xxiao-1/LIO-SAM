@@ -66,7 +66,7 @@ std::ostream& operator<<(std::ostream& os, const ConstantBias& bias) {
 
 /// print with optional string
 void ConstantBias::print(const std::string& s) const {
-  std::cout << s << *this << std::endl;
+  //std::cout << s << *this << std::endl;
 }
 
 } // namespace imuBias

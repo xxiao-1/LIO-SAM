@@ -126,22 +126,22 @@ Vector6 ChaPreintegrationBase::computeError(const ChaNavState& state_i,
   // Predict state at time j
   Matrix6 D_predict_state_i;
   Matrix6 D_predict_bias_i;
-  std::cout<<"computeError before predict ----1"<<std::endl;
+  //std::cout<<"computeError before predict ----1"<<std::endl;
   ChaNavState predictedState_j = predict(
       state_i, bias_i, H1 ? &D_predict_state_i : 0, H3 ? &D_predict_bias_i : 0);
-  std::cout<<"computeError after predict ----2"<<std::endl;
+  //std::cout<<"computeError after predict ----2"<<std::endl;
   // Calculate error
   Matrix6 D_error_state_j, D_error_predict;
   Vector6 error =
       state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
                                H1 || H3 ? &D_error_predict : 0);
-        std::cout<<"computeError error is ----3"<<error<<std::endl;
+        //std::cout<<"computeError error is ----3"<<error<<std::endl;
   if (H1) *H1 << D_error_predict* D_predict_state_i;
-        std::cout<<"computeError ----4"<<std::endl;
+        //std::cout<<"computeError ----4"<<std::endl;
   if (H2) *H2 << D_error_state_j;
-        std::cout<<"computeErro--------------5"<<std::endl;
+        //std::cout<<"computeErro--------------5"<<std::endl;
   if (H3) *H3 << D_error_predict* D_predict_bias_i;
-        std::cout<<"computeError ----6"<<std::endl;
+        //std::cout<<"computeError ----6"<<std::endl;
 
   return error;
 }
@@ -153,15 +153,15 @@ Vector6 ChaPreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 
   // Note that derivative of constructors below is not identity for velocity, but
   // a 9*3 matrix == Z_3x3, Z_3x3, state.R().transpose()
-  std::cout<<"computeErrorAndJacobians begin---0"<<std::endl;
+  //std::cout<<"computeErrorAndJacobians begin---0"<<std::endl;
   ChaNavState state_i(pose_i);
   ChaNavState state_j(pose_j);
-  std::cout<<"computeErrorAndJacobians convert to ChaNavState--1"<<std::endl;
+  //std::cout<<"computeErrorAndJacobians convert to ChaNavState--1"<<std::endl;
   // Predict state at time j
   Matrix6 D_error_state_i, D_error_state_j;
   Vector6 error = computeError(state_i, state_j, bias_i,
                          H1 ? &D_error_state_i : 0, H2? &D_error_state_j : 0, H3);
-        std::cout<<"computeErrorAndJacobians computeError end--2"<<std::endl;
+        //std::cout<<"computeErrorAndJacobians computeError end--2"<<std::endl;
 
   // Separate out derivatives in terms of 5 arguments
   // Note that doing so requires special treatment of velocities, as when treated as
