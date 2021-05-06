@@ -132,6 +132,7 @@ bool ChaFactor::equals(const NonlinearFactor& other, double tol) const {
 Vector ChaFactor::evaluateError(const Pose3& pose_i,
     const Pose3& pose_j,  const chaBias::ConstantBias& bias_i, boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
+    std::cout<<"chassis evaluate error"<<std::endl;
   return _PIM_.computeErrorAndJacobians(pose_i,  pose_j,  bias_i, H1, H2, H3);
 }
 

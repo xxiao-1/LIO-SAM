@@ -111,7 +111,7 @@ Vector6 ChaNavState::localCoordinates(const ChaNavState& g, //
   Matrix3 D_xi_R;
   xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dt;
   if (H1) {
-    *H1 << D_xi_R * D_dR_R,//
+    *H1 << D_xi_R * D_dR_R, Z_3x3,//
     D_dt_R, -I_3x3;
   }
   if (H2) {
