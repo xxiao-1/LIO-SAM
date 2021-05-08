@@ -57,14 +57,18 @@ public:
             }
         }
 
+        // 接收mapOptmization发布的odometry, 值：transformToBeMapped，低频率，回环修正后结果
         subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("lio_sam/mapping/odometry", 5,
                                                             &TransformFusion::lidarOdometryHandler, this,
                                                             ros::TransportHints().tcpNoDelay());
+        // 接收imu+chassis+lidar优化后的结果
         subImuOdometry = nh.subscribe<nav_msgs::Odometry>(odomTopic + "_incremental", 2000,
                                                           &TransformFusion::imuOdometryHandler, this,
                                                           ros::TransportHints().tcpNoDelay());
 
+        // 将接收到的两个消息融合输出laserOdometry
         pubImuOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic, 2000);
+        // 同为laserOdometry，展示上次优化到现在的轨迹变化
         pubImuPath = nh.advertise<nav_msgs::Path>("lio_sam/imu/path", 1);
     }
 
@@ -235,6 +239,10 @@ public:
         subChassis = nh.subscribe<lio_sam::chassis_data>("/chassis_msgs", 2000, &IMUPreintegration::chassisHandler,
                                                          this, ros::TransportHints().tcpNoDelay());
 
+        //两个去处：
+        // 1、作为lidar去畸变，同时作为匹配的初值intial guess
+        //2 被接收用来发布imu_path 和 odometry/imu
+        // 是imu预测的值，根据imu lidar chassis图优化结果进行了调整
         pubImuOdometry = nh.advertise<nav_msgs::Odometry>(odomTopic + "_incremental", 2000);
         pubChaOdometry = nh.advertise<nav_msgs::Odometry>("chassis_incremental", 2000);
 
@@ -313,7 +321,7 @@ public:
                 thisChassis.velocity,thisChassis.angle, dt);
 
         // predict state and publish odometry
-        const bool CHASSIS_ODOMETRY=false;
+        const bool CHASSIS_ODOMETRY=true;
         if(CHASSIS_ODOMETRY){
             // predict odometry
             gtsam::ChaNavState currentChaState = chaIntegratorCha_->predict(prevStateCha, prevBiasCha);// TODO
@@ -336,12 +344,6 @@ public:
             odometryCha.pose.pose.orientation.z = lidarPose.rotation().toQuaternion().z();
             odometryCha.pose.pose.orientation.w = lidarPose.rotation().toQuaternion().w();
 
-//        odometryCha.twist.twist.linear.x = (1+prevBiasCha.wheelspeed().x)*(thisChassis.velocity.x);
-//        odometryCha.twist.twist.linear.y = (1+prevBiasCha.wheelspeed().y)*(thisChassis.velocity.y);
-//        odometryCha.twist.twist.linear.z = (1+prevBiasCha.wheelspeed().z)*(thisChassis.velocity.z);
-//        odometryCha.twist.twist.angular.x = thisChassis.angle.x + prevBiasCha.gyroscope().x();
-//        odometryCha.twist.twist.angular.y = thisChassis.angle.y + prevBiasCha.gyroscope().y();
-//        odometryCha.twist.twist.angular.z = thisChassis.angle.z + prevBiasCha.gyroscope().z();
             odometryCha.twist.twist.linear.x = 0;
             odometryCha.twist.twist.linear.y = 0;
             odometryCha.twist.twist.linear.z =0;
@@ -603,6 +605,7 @@ public:
         prevPose_ = result.at<gtsam::Pose3>(X(key));
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
+        prevStateCha_=gtsam::ChaNavState(prevPose_);
          std::cout << "优化后的prevState为---------------------------------" << std::endl << prevState_ << std::endl;
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
         prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
@@ -615,31 +618,11 @@ public:
             return;
         }
 
-        // output for test
-//        gtsam::Pose3 prevPose_i=result.at<gtsam::Pose3>(X(key-1));
-//        Eigen::Quaterniond Qi= prevPose_i.rotation().toQuaternion();
-//        Eigen::Quaterniond Qj= prevPose_.rotation().toQuaternion();
-//        Eigen::Vector3d Pi=prevPose_i.translation();
-//        Eigen::Vector3d Pj=prevPose_.translation();
-//        Eigen::Vector3d Piimu=propState_.position();
-//        Eigen::Vector3d delta_p=chassisIntegratorOpt_.getDeltaP();
-//        Eigen::Quaterniond delta_q=chassisIntegratorOpt_.getDeltaQ();
-//       // // std::cout<<"Qi="<<Qi.x()<<Qi.y()<<Qi.z()<<"Qj="<<Qj.x()<<Qj.y()<<Qj.z()<<"Pi="<<Pi<<"Pj="<<Pj<<std::endl;
-//        // std::cout<<"chassis delta_p= "<<delta_p.transpose()<<std::endl;
-//        // std::cout<<"chassis delta_p after trans "<<(Qi*delta_p).transpose()<<std::endl;
-//        // std::cout<<"local delta_p= "<<(Pj - Pi).transpose()<<std::endl;
-//        // std::cout<<"imu residuals p= "<<(Pj - Piimu).transpose()<<std::endl;
-//        Eigen::Matrix<double, 6, 1> residuals;
-//        residuals.setZero();
-////        residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
-//        residuals.block<3, 1>(0, 0) = (Pj - Pi) - Qi*delta_p;
-//        residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-//        // std::cout<<"residuals is "<<residuals.transpose()<<std::endl;
-
         // 2. after optiization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;
         prevBiasOdom = prevBias_;
         prevBiasCha = prevBiasCha_;
+        prevStateCha = prevStateCha_;
         // first pop imu message older than current correction data
         double lastImuQT = -1;
         while (!imuQueImu.empty() && ROS_TIME(&imuQueImu.front()) < currentCorrectionTime - delta_t) {
