@@ -150,13 +150,13 @@ public:
 
         myfile.open("/home/xxiao/data/gt.txt", ios::app); //lego
         myfile.precision(10);
-        double roll, pitch, yaw;
-        tf::Quaternion orientation;
-        tf::quaternionMsgToTF(msg->pose.pose.orientation, orientation);
-        tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
-        roll = roll*180 /M_PI;
-        pitch = pitch*180 /M_PI;
-        yaw = yaw*180 /M_PI;
+//        double roll, pitch, yaw;
+//        tf::Quaternion orientation;
+//        tf::quaternionMsgToTF(msg->pose.pose.orientation, orientation);
+//        tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
+//        roll = roll*180 /M_PI;
+//        pitch = pitch*180 /M_PI;
+//        yaw = yaw*180 /M_PI;
         ROS_DEBUG("odom success");
 
         myfile<< msg-> header.stamp<<" ";
