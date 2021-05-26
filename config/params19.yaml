@@ -15,10 +15,6 @@ lio_sam:
   # chassis Settings
   useChassis: false
 
-  # Extrinsics (chassis -> IMU)
-  v2bTrans: [1.46,0.31189268,1.3]
-  v2bRot: [0.9988, 0.0114, -0.0482, -0.0105, 0.9998, 0.0192, 0.0484, -0.0187,0.9987]
-
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3
   savePCDDirectory: "/data/lio-sam/"        # in your home folder, starts and ends with "/". Warning: the code deletes "LOAM" folder then recreates it. See "mapOptimization" for implementation
@@ -35,11 +31,12 @@ lio_sam:
   imuAccBiasN: 6.4356659353532566e-05
   imuGyrBiasN: 3.5640318696367613e-05
   imuGravity: 9.80511
+  imuRPYWeight: 0.01
 
   # Extrinsics (lidar -> IMU)
   extrinsicTrans: [9.29e-02, 1.173e-01, -7.6e-02]
-  extrinsicRot: [1, 0, 0, 0, 1, 0, 0, 0, 1]
-  extrinsicRPY: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+  extrinsicRot: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
+  # extrinsicRRY: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
 
   # extrinsicRot: [1, 0, 0,
   #                 0, 1, 0,
@@ -70,7 +67,7 @@ lio_sam:
   # Surrounding map
   surroundingkeyframeAddingDistThreshold: 1.0   # meters, regulate keyframe adding threshold
   surroundingkeyframeAddingAngleThreshold: 0.2  # radians, regulate keyframe adding threshold
-  surroundingKeyframeDensity: 2.0               # meters, downsample surrounding keyframe poses   
+  surroundingKeyframeDensity: 2.0               # meters, downsample surrounding keyframe poses
   surroundingKeyframeSearchRadius: 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
 
   # Loop closure
