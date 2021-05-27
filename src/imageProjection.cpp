@@ -58,7 +58,9 @@ private:
     sensor_msgs::PointCloud2 currentCloudMsg;
 
     ros::Subscriber subGTOdom;
+    ros::Subscriber subGTFix;
     ofstream myfile;
+    ofstream myfileFix;
 
     double *imuTime = new double[queueLength];
     double *imuRotX = new double[queueLength];
@@ -93,6 +95,7 @@ public:
     deskewFlag(0)
     {
         //subGTOdom     = nh.subscribe("gps/odom", 1000, &ImageProjection::gtOdomHandler, this, ros::TransportHints().tcpNoDelay());
+        subGTFix     = nh.subscribe("/gps/fix", 1000, &ImageProjection::gtFixHandler, this, ros::TransportHints().tcpNoDelay());
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom       = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental", 2000, &ImageProjection::odometryHandler, this, ros::TransportHints().tcpNoDelay());
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
@@ -164,6 +167,19 @@ public:
         myfile <<" " << msg->pose.pose.orientation.x << " " << msg->pose.pose.orientation.y << " " << msg->pose.pose.orientation.z<<" "<<msg->pose.pose.orientation.w ;
         myfile<< "\n";
         myfile.close();
+    }
+    void gtFixHandler(const sensor_msgs::NavSatFix::ConstPtr& msg){
+        if(true){
+
+        }
+        myfileFix.open("/home/xxiao/data/fix.txt", ios::app); //lego
+        myfileFix.precision(10);
+        ROS_DEBUG("fix success");
+        myfileFix<< msg-> header.stamp<<" ";
+        myfileFix <<msg->altitude<< " " <<msg->latitude<< " "<<msg->longitude;
+        myfileFix <<" " << 0 << " " << 0 << " " << 0<<" "<<1 ;
+        myfileFix<< "\n";
+        myfileFix.close();
     }
     void imuHandler(const sensor_msgs::Imu::ConstPtr& imuMsg)
     {

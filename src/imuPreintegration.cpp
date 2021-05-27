@@ -493,8 +493,12 @@ public:
                     optimizer.marginalCovariance(V(key - 1)));
             gtsam::noiseModel::Gaussian::shared_ptr updatedBiasNoise = gtsam::noiseModel::Gaussian::Covariance(
                     optimizer.marginalCovariance(B(key - 1)));
-            gtsam::noiseModel::Gaussian::shared_ptr updatedBiasChaNoise = gtsam::noiseModel::Gaussian::Covariance(
+            gtsam::noiseModel::Gaussian::shared_ptr updatedBiasChaNoise=gtsam::noiseModel::Gaussian::Covariance(
+                    optimizer.marginalCovariance(B(key - 1)));
+            if(useChassis){
+                updatedBiasChaNoise = gtsam::noiseModel::Gaussian::Covariance(
                         optimizer.marginalCovariance(K(key - 1)));
+            }
             // reset graph
             resetOptimization();
             // add pose
