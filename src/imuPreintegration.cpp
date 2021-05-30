@@ -388,14 +388,13 @@ public:
         beta = (1 + mass * vel * vel * len_a / (2 * len * len_b * k2)) * len_b * steer / i0 / len / (1 - K * vel * vel);
         vy = vel * sin(beta);//changed for xiaomi_d you:x shang:y hou:z
         vx = vel * cos(beta);
-//        rz = vel * steer / i0 / len / (1 - K * vel * vel);
+        if(useSteer){
+            double rz = vel * steer / i0 / len / (1 - K * vel * vel);
+            chassis_out.angle = {0, 0, rz};
+        }else{
+            chassis_out.angle = {tmp_imu_ang_x, tmp_imu_ang_y, tmp_imu_ang_z};
+        }
         chassis_out.velocity = {vx, vy, vz};
-        //ROS_INFO("chassis vel is %f,%f,%f", vx, vy, vz);
-        //chassis_out.angle = {rx, ry, rz};
-        //// std::cout<<"after Velocity is"<< chassis_out.velocity<<"==angel is "<<chassis_out.angle<<std::endl;
-//        ROS_INFO("chassis angular_vel is %f,%f,%f",rx,ry,rz);//right,front,yaw
-        // use latest imu angle velocity (imu msg time - chassis msg time = -0.003825s)
-        chassis_out.angle = {tmp_imu_ang_x, tmp_imu_ang_y, tmp_imu_ang_z};
         return chassis_out;
     }
 
