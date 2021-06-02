@@ -379,10 +379,15 @@ public:
             *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);
             *globalSurfCloud   += *transformPointCloud(surfCloudKeyFrames[i],    &cloudKeyPoses6D->points[i]);
             cout << "\r" << std::flush << "Processing feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
+            Eigen::AngleAxisd rollAngle(cloudKeyPoses6D->points[i].roll,Eigen::Vector3d::UnitX());
+            Eigen::AngleAxisd pitchAngle(cloudKeyPoses6D->points[i].pitch ,Eigen::Vector3d::UnitY());
+            Eigen::AngleAxisd yawAngle(cloudKeyPoses6D->points[i].yaw,Eigen::Vector3d::UnitZ());
+            Eigen::Quaterniond quaternion;
+            quaternion=yawAngle*pitchAngle*rollAngle;
 
             myfile<< ros::Time().fromSec(cloudKeyPoses6D->points[i].time)<<" ";
             myfile <<cloudKeyPoses6D->points[i].x<< " " <<cloudKeyPoses6D->points[i].y<< " "<<cloudKeyPoses6D->points[i].z;
-            myfile <<" " << cloudKeyPoses6D->points[i].roll<< " " <<cloudKeyPoses6D->points[i].pitch  << " " << cloudKeyPoses6D->points[i].yaw <<" "<<0;
+            myfile <<" " << quaternion.x() << " " <<quaternion.y()  << " " << quaternion.z() <<" "<<quaternion.w();
             myfile<< "\n";
         }
         myfile.close();
@@ -400,19 +405,19 @@ public:
         downSizeFilterCorner.setInputCloud(globalCornerCloud);
         downSizeFilterCorner.setLeafSize(req.resolution, req.resolution, req.resolution);
         downSizeFilterCorner.filter(*globalCornerCloudDS);
-        pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloudDS);
+//        pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloudDS);
         // down-sample and save surf cloud
         downSizeFilterSurf.setInputCloud(globalSurfCloud);
         downSizeFilterSurf.setLeafSize(req.resolution, req.resolution, req.resolution);
         downSizeFilterSurf.filter(*globalSurfCloudDS);
-        pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloudDS);
+//        pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloudDS);
       }
       else
       {
         // save corner cloud
-        pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloud);
+//        pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloud);
         // save surf cloud
-        pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloud);
+//        pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloud);
       }
 
       // save global point cloud map
@@ -516,12 +521,17 @@ public:
     void loopClosureThread()
     {
         if (loopClosureEnableFlag == false)
+        {
+            std::cout<<"loopclosure=false"<<std::endl;
             return;
-
-        ros::Rate rate(loopClosureFrequency);
+        }
+        std::cout<<"loopclosure=true0"<<std::endl;
+         ros::Rate rate(loopClosureFrequency);
         while (ros::ok())
         {
+            std::cout<<"loopclosure=true1"<<std::endl;
             rate.sleep();
+            std::cout<<"loopclosure=true2"<<std::endl;
             performLoopClosure();
             visualizeLoopClosure();
         }
@@ -541,21 +551,22 @@ public:
 
     void performLoopClosure()
     {
+        std::cout<<"loopclosure=true3"<<std::endl;
         if (cloudKeyPoses3D->points.empty() == true)
             return;
 
         mtx.lock();
         *copy_cloudKeyPoses3D = *cloudKeyPoses3D;
         *copy_cloudKeyPoses6D = *cloudKeyPoses6D;
+        std::cout<<"loopclosure=true4"<<std::endl;
         mtx.unlock();
-
         // find keys
         int loopKeyCur;
         int loopKeyPre;
         if (detectLoopClosureExternal(&loopKeyCur, &loopKeyPre) == false)
             if (detectLoopClosureDistance(&loopKeyCur, &loopKeyPre) == false)
                 return;
-
+        std::cout<<"loopclosure=true5"<<std::endl;
         // extract cloud
         pcl::PointCloud<PointType>::Ptr cureKeyframeCloud(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr prevKeyframeCloud(new pcl::PointCloud<PointType>());
@@ -581,6 +592,7 @@ public:
         icp.setInputTarget(prevKeyframeCloud);
         pcl::PointCloud<PointType>::Ptr unused_result(new pcl::PointCloud<PointType>());
         icp.align(*unused_result);
+        std::cout << "-----------------------------------------[RS] ICP fit score: " << icp.getFitnessScore() << std::endl;
 
         if (icp.hasConverged() == false || icp.getFitnessScore() > historyKeyframeFitnessScore)
             return;
@@ -955,12 +967,12 @@ public:
         if (cloudKeyPoses3D->points.empty() == true)
             return; 
         
-        // if (loopClosureEnableFlag == true)
-        // {
-        //     extractForLoopClosure();    
-        // } else {
-        //     extractNearby();
-        // }
+         if (loopClosureEnableFlag == true)
+         {
+             extractForLoopClosure();
+         } else {
+             extractNearby();
+         }
 
         extractNearby();
     }

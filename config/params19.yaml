@@ -13,7 +13,9 @@ lio_sam:
   poseCovThreshold: 25.0                      # m^2, threshold for using GPS data
 
   # chassis Settings
-  useChassis: true
+  useSteer: true
+  useChassis: false
+  showFactor: false
 
   # Export settings
   savePCD: true                              # https://github.com/TixiaoShan/LIO-SAM/issues/3

@@ -89,7 +89,7 @@ namespace gtsam {
         residuals.setZero();
         residuals.block<3, 1>(0, 0) = Qi.inverse() * (Pj - Pi) - delta_p;
         residuals.block<3, 1>(3, 0) = 2 * (delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-        std::cout<<"residuals is "<<residuals<<std::endl;
+        //std::cout<<"residuals is "<<residuals<<std::endl;
         return residuals;
     }
 

@@ -150,6 +150,7 @@ public:
     // use chassis
     bool useChassis;
     bool useSteer;
+    bool showFactor;
     
     // Loop closure
     bool  loopClosureEnableFlag;
@@ -246,6 +247,7 @@ public:
 
         nh.param<bool>("lio_sam/useChassis", useChassis, false);
         nh.param<bool>("lio_sam/useSteer", useSteer, false);
+        nh.param<bool>("lio_sam/showFactor", showFactor, false);
         nh.param<bool>("lio_sam/loopClosureEnableFlag", loopClosureEnableFlag, false);
         nh.param<float>("lio_sam/loopClosureFrequency", loopClosureFrequency, 1.0);
         nh.param<int>("lio_sam/surroundingKeyframeSize", surroundingKeyframeSize, 50);

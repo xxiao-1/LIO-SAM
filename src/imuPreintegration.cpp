@@ -575,7 +575,9 @@ public:
         const gtsam::PreintegratedImuMeasurements &preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements &>(*imuIntegratorOpt_);
         gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
         graphFactors.add(imu_factor);
-        imu_factor.print("imufactor");
+        if(showFactor){
+            imu_factor.print("imufactor");
+        }
         // add imu bias between factor
         graphFactors.add(
                 gtsam::BetweenFactor<gtsam::imuBias::ConstantBias>(B(key - 1), B(key), gtsam::imuBias::ConstantBias(),
@@ -600,7 +602,10 @@ public:
             const gtsam::PreintegratedChaMeasurements &preint_cha = dynamic_cast<const gtsam::PreintegratedChaMeasurements &>(*chaIntegratorOpt_);
             gtsam::ChaFactor cha_factor(X(key - 1), X(key), K(key - 1), preint_cha);
             graphFactors.add(cha_factor);
-            cha_factor.print();
+            if(showFactor){
+                cha_factor.print();
+            }
+//            std::cout<<"use chassis"<<std::endl;
             // add cha bias between factor
             graphFactors.add(
                     gtsam::BetweenFactor<gtsam::chaBias::ConstantBias>(K(key - 1), K(key), gtsam::chaBias::ConstantBias(),

@@ -15,7 +15,7 @@ lio_sam:
   # chassis Settings
   useSteer: true
   useChassis: false
-
+  showFactor: false
   # Extrinsics (chassis -> IMU)
   v2bTrans: [0.8, -0.07, 0]
   v2bRot: [1, 0, 0, 0, 1, 0, 0, 0, 1]
@@ -76,7 +76,7 @@ lio_sam:
   surroundingKeyframeSearchRadius: 50.0         # meters, within n meters scan-to-map optimization (when loop closure disabled)
 
   # Loop closure
-  loopClosureEnableFlag: false
+  loopClosureEnableFlag: true
   surroundingKeyframeSize: 25                   # submap size (when loop closure enabled)
   historyKeyframeSearchRadius: 15.0             # meters, key frame that is within n meters from current pose will be considerd for loop closure
   historyKeyframeSearchTimeDiff: 30.0           # seconds, key frame that is n seconds older will be considered for loop closure
