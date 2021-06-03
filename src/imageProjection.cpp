@@ -41,6 +41,7 @@ private:
 
     std::mutex imuLock;
     std::mutex odoLock;
+    std::mutex gtImuLock;
 
     ros::Subscriber subLaserCloud;
     ros::Publisher  pubLaserCloud;
@@ -59,6 +60,8 @@ private:
 
     ros::Subscriber subGTOdom;
     ros::Subscriber subGTFix;
+    ros::Subscriber subGTImu;
+    std::deque<sensor_msgs::Imu> gtImuQueue;
     ofstream myfile;
     ofstream myfileFix;
 
@@ -94,8 +97,10 @@ public:
     ImageProjection():
     deskewFlag(0)
     {
-        //subGTOdom     = nh.subscribe("gps/odom", 1000, &ImageProjection::gtOdomHandler, this, ros::TransportHints().tcpNoDelay());
-        subGTFix     = nh.subscribe("/gps/fix", 1000, &ImageProjection::gtFixHandler, this, ros::TransportHints().tcpNoDelay());
+//        subGTOdom     = nh.subscribe("gps/odom", 1000, &ImageProjection::gtOdomHandler, this, ros::TransportHints().tcpNoDelay());
+//        subGTFix     = nh.subscribe("/gps/fix", 1000, &ImageProjection::gtFixHandler, this, ros::TransportHints().tcpNoDelay());
+//        subGTImu     = nh.subscribe("/imu/data", 1000, &ImageProjection::gtImuHandler, this, ros::TransportHints().tcpNoDelay());
+
         subImu        = nh.subscribe<sensor_msgs::Imu>(imuTopic, 2000, &ImageProjection::imuHandler, this, ros::TransportHints().tcpNoDelay());
         subOdom       = nh.subscribe<nav_msgs::Odometry>(odomTopic+"_incremental", 2000, &ImageProjection::odometryHandler, this, ros::TransportHints().tcpNoDelay());
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 5, &ImageProjection::cloudHandler, this, ros::TransportHints().tcpNoDelay());
@@ -153,31 +158,31 @@ public:
 
         myfile.open("/home/xxiao/data/gt.txt", ios::app); //lego
         myfile.precision(10);
-//        double roll, pitch, yaw;
-//        tf::Quaternion orientation;
-//        tf::quaternionMsgToTF(msg->pose.pose.orientation, orientation);
-//        tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
-//        roll = roll*180 /M_PI;
-//        pitch = pitch*180 /M_PI;
-//        yaw = yaw*180 /M_PI;
         ROS_DEBUG("odom success");
-
         myfile<< msg-> header.stamp<<" ";
         myfile <<msg->pose.pose.position.x<< " " <<msg->pose.pose.position.y<< " "<<msg->pose.pose.position.z;
         myfile <<" " << msg->pose.pose.orientation.x << " " << msg->pose.pose.orientation.y << " " << msg->pose.pose.orientation.z<<" "<<msg->pose.pose.orientation.w ;
         myfile<< "\n";
         myfile.close();
     }
+    void gtImuHandler (const sensor_msgs::Imu::ConstPtr& msg){
+        std::lock_guard<std::mutex> lock1(gtImuLock);
+        gtImuQueue.push_back(*msg);
+    }
     void gtFixHandler(const sensor_msgs::NavSatFix::ConstPtr& msg){
-        if(true){
-
-        }
         myfileFix.open("/home/xxiao/data/fix.txt", ios::app); //lego
         myfileFix.precision(10);
         ROS_DEBUG("fix success");
         myfileFix<< msg-> header.stamp<<" ";
         myfileFix <<msg->altitude<< " " <<msg->latitude<< " "<<msg->longitude;
-        myfileFix <<" " << 0 << " " << 0 << " " << 0<<" "<<1 ;
+        sensor_msgs::Imu thisImu=gtImuQueue.front();
+        int delatT=thisImu.header.stamp.toSec() - msg-> header.stamp.toSec();
+        if(delatT < 0.2 && delatT > -0.2){
+            myfileFix <<" " << thisImu.orientation.x << " " << thisImu.orientation.y << " " << thisImu.orientation.z<<" "<<thisImu.orientation.w ;
+            gtImuQueue.pop_front();
+        }else{
+            myfileFix <<" " << 0 << " " << 0 << " " << 0<<" "<<0 ;
+        }
         myfileFix<< "\n";
         myfileFix.close();
     }
