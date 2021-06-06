@@ -522,14 +522,14 @@ public:
     {
         if (loopClosureEnableFlag == false)
         {
-//            std::cout<<"loopclosure=false"<<std::endl;
+            std::cout<<"loopclosure=false"<<std::endl;
             return;
         }
-//        std::cout<<"loopclosure=true0"<<std::endl;
+        std::cout<<"loopclosure=true0"<<std::endl;
          ros::Rate rate(loopClosureFrequency);
         while (ros::ok())
         {
-//            std::cout<<"loopclosure=true1"<<std::endl;
+            std::cout<<"loopclosure=true1"<<std::endl;
             rate.sleep();
 //            std::cout<<"loopclosure=true2"<<std::endl;
             performLoopClosure();
@@ -551,14 +551,14 @@ public:
 
     void performLoopClosure()
     {
-//        std::cout<<"loopclosure=true3"<<std::endl;
+        std::cout<<"loopclosure=true3----------"<<std::endl;
         if (cloudKeyPoses3D->points.empty() == true)
             return;
 
         mtx.lock();
         *copy_cloudKeyPoses3D = *cloudKeyPoses3D;
         *copy_cloudKeyPoses6D = *cloudKeyPoses6D;
-//        std::cout<<"loopclosure=true4"<<std::endl;
+        std::cout<<"loopclosure=true4=========="<<std::endl;
         mtx.unlock();
         // find keys
         int loopKeyCur;
@@ -566,7 +566,7 @@ public:
         if (detectLoopClosureExternal(&loopKeyCur, &loopKeyPre) == false)
             if (detectLoopClosureDistance(&loopKeyCur, &loopKeyPre) == false)
                 return;
-        std::cout<<"loopclosure=true5"<<std::endl;
+        std::cout<<"loopclosure=true5***************"<<std::endl;
         // extract cloud
         pcl::PointCloud<PointType>::Ptr cureKeyframeCloud(new pcl::PointCloud<PointType>());
         pcl::PointCloud<PointType>::Ptr prevKeyframeCloud(new pcl::PointCloud<PointType>());
@@ -1408,6 +1408,7 @@ public:
             noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
             gtsam::Pose3 poseFrom = pclPointTogtsamPose3(cloudKeyPoses6D->points.back());
             gtsam::Pose3 poseTo   = trans2gtsamPose(transformTobeMapped);
+            // add here???
             gtSAMgraph.add(BetweenFactor<Pose3>(cloudKeyPoses3D->size()-1, cloudKeyPoses3D->size(), poseFrom.between(poseTo), odometryNoise));
             initialEstimate.insert(cloudKeyPoses3D->size(), poseTo);
         }

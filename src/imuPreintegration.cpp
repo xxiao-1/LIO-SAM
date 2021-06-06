@@ -217,6 +217,7 @@ public:
     gtsam::ISAM2 optimizer;
     gtsam::NonlinearFactorGraph graphFactors;
     gtsam::Values graphValues;
+    gtsam::Vector3 v;
 
     const double delta_t = 0;
     double tmp_imu_ang_x=0,tmp_imu_ang_y=0,tmp_imu_ang_z=0;
@@ -260,7 +261,7 @@ public:
         priorPoseNoise = gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2).finished()); // rad,rad,rad,m, m, m
         priorVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1e4); // m/s
-        chassisVelNoise = gtsam::noiseModel::Isotropic::Sigma(0.5, 1e4); // m/s
+        chassisVelNoise = gtsam::noiseModel::Isotropic::Sigma(3, 1); // m/s
         priorBiasNoise = gtsam::noiseModel::Isotropic::Sigma(6, 1e-3); // 1e-2 ~ 1e-3 seems to be good
         correctionNoise = gtsam::noiseModel::Diagonal::Sigmas(
                 (gtsam::Vector(6) << 0.05, 0.05, 0.05, 0.1, 0.1, 0.1).finished()); // rad,rad,rad,m, m, m
@@ -369,7 +370,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        // std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double steer = 0, bias = 0;
         double beta;
         const double k1 = 30082 * 2;//front tyre
@@ -527,7 +528,7 @@ public:
             key = 1;
         }
 
-        // std::cout<<"3.0-----second graph begin "<<std::endl;
+
         // 1. integrate imu data and optimize
         while (!imuQueOpt.empty()) {
             // pop and integrate imu data that is between two optimizations
@@ -546,23 +547,18 @@ public:
             } else
                 break;
         }
-        // std::cout<<"3.01-----add imu end "<<std::endl;
         // 2. integrate chassis data and optimize
         if(useChassis){
             while (!chaQueOpt.empty()) {
                 // pop and integrate chassis data that is between two optimizations
                 DynamicMeasurement *thisChassis= &chaQueOpt.front();
                 double chaTime = thisChassis->time;
-                // std::cout<<"3.02-----the chaTime is "<<chaTime<<std::endl;
+
                 if (chaTime < currentCorrectionTime - delta_t) {
                     double dt = (lastChaT_opt < 0) ? (1.0 / 500.0) : (chaTime - lastChaT_opt);
-                    // std::cout<<"3.02-----the dt is "<<dt<<std::endl;
-                    gtsam::Vector3 v=thisChassis->velocity;
-                    // std::cout<<"velocity is "<<v<<std::endl;
+                    v=thisChassis->velocity;
                     gtsam::Vector3 ang=thisChassis->angle;
-                    // std::cout<<"angle is "<<ang<<std::endl;
                     chaIntegratorOpt_->integrateMeasurement(v, ang, dt);
-                    // std::cout<<"3.03-----the integrateMeasurement end"<<std::endl;
                     lastChaT_opt = chaTime;
                     chaQueOpt.pop_front();
                 } else
@@ -570,7 +566,6 @@ public:
             }
         }
 
-       // std::cout<<"3-------------------integrated chassis end"<<std::endl;
         // add imu factor to graph
         const gtsam::PreintegratedImuMeasurements &preint_imu = dynamic_cast<const gtsam::PreintegratedImuMeasurements &>(*imuIntegratorOpt_);
         gtsam::ImuFactor imu_factor(X(key - 1), V(key - 1), X(key), V(key), B(key - 1), preint_imu);
@@ -587,9 +582,13 @@ public:
         // add pose factor
         gtsam::Pose3 curPose = lidarPose.compose(lidar2Imu);
         gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, degenerate ? correctionNoise2 : correctionNoise);
-        // mock lidar not good
-        // gtsam::PriorFactor <gtsam::Pose3> pose_factor(X(key), curPose, correctionNoise3);
         graphFactors.add(pose_factor);
+//        if(useChassis){
+//            // add velocity factor
+//            gtsam::PriorFactor <gtsam::Vector3> cha_vel_factor(V(key), v, chassisVelNoise);
+//            graphFactors.add(cha_vel_factor);
+//
+//        }
 
         // insert predicted values
         gtsam::NavState propState_ = imuIntegratorOpt_->predict(prevState_, prevBias_);
@@ -626,12 +625,14 @@ public:
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
+//        std::cout<<"imuBias is =============="<<prevBias_<<std::endl;
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
 
         if(useChassis){
             prevStateCha_=gtsam::ChaNavState(prevPose_);
             prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
+//            std::cout<<"chaBias is --------------"<<prevBiasCha_<<std::endl;
             chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
         }
         // check optimization
