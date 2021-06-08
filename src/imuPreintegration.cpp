@@ -306,6 +306,8 @@ public:
     }
 
     void chassisHandler(const lio_sam::chassis_data::ConstPtr &chassis_msg) {
+        clock_t start, finish;
+        start = clock();
         if(useChassis == false){
             return;
         }
@@ -324,9 +326,12 @@ public:
         // integrate this single chassis message
         chaIntegratorCha_->integrateMeasurement(
                 thisChassis.velocity,thisChassis.angle, dt);
-
+        finish = clock();
+        printf( "Time to do chassisHandler is ");
+        duration = (double)(finish - start) / CLOCKS_PER_SEC;
+        printf( "%f seconds\n", duration );
         // predict state and publish odometry
-        const bool CHASSIS_ODOMETRY=true;
+        const bool CHASSIS_ODOMETRY=false;
         if(CHASSIS_ODOMETRY){
             // predict odometry
             gtsam::ChaNavState currentChaState = chaIntegratorCha_->predict(prevStateCha, prevBiasCha);// TODO
