@@ -14,7 +14,7 @@ lio_sam:
 
   # chassis Settings
   useSteer: true
-  useChassis: true
+  useChassis: false
   showFactor: false
   loopClosureEnableFlag: false
   # Export settings
@@ -37,7 +37,7 @@ lio_sam:
 
   # Extrinsics (lidar -> IMU)
   extrinsicTrans: [0.8, -0.07, -1.3]
-  extrinsicRot: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
+  extrinsicRot: [1, 0, 0, 0, 1, 0, 0, 0, 1]
   # extrinsicRRY: [5.23689e-01, 8.5190979e-01, 0, -8.5190979e-01, 5.23689e-01, 0, 0, 0, 1]
 
   # extrinsicRot: [1, 0, 0,
@@ -59,7 +59,7 @@ lio_sam:
   mappingSurfLeafSize: 0.4                      # default: 0.4
 
   # robot motion constraint (in case you are using a 2D robot)
-  z_tollerance: 4                            # meters
+  z_tollerance: 20                            # meters
   rotation_tollerance: 1000                     # radians
 
   # CPU Params
