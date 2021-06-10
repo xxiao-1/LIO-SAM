@@ -328,7 +328,7 @@ public:
                 thisChassis.velocity,thisChassis.angle, dt);
         finish = clock();
         printf( "Time to do chassisHandler is ");
-        duration = (double)(finish - start) / CLOCKS_PER_SEC;
+        double duration = (finish - start) / CLOCKS_PER_SEC;
         printf( "%f seconds\n", duration );
         // predict state and publish odometry
         const bool CHASSIS_ODOMETRY=false;
