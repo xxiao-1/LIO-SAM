@@ -306,8 +306,8 @@ public:
     }
 
     void chassisHandler(const lio_sam::chassis_data::ConstPtr &chassis_msg) {
-        clock_t start, finish;
-        start = clock();
+//        clock_t start, finish;
+//        start = clock();
         if(useChassis == false){
             return;
         }
@@ -326,10 +326,10 @@ public:
         // integrate this single chassis message
         chaIntegratorCha_->integrateMeasurement(
                 thisChassis.velocity,thisChassis.angle, dt);
-        finish = clock();
-        printf( "Time to do chassisHandler is ");
-        double duration = (finish - start) / CLOCKS_PER_SEC;
-        printf( "%f seconds\n", duration );
+//        finish = clock();
+//        printf( "0 chassisHandler is ");
+//        double duration = (finish - start) / 1000;
+//        printf( "%f ms\n", duration );
         // predict state and publish odometry
         const bool CHASSIS_ODOMETRY=false;
         if(CHASSIS_ODOMETRY){
@@ -375,7 +375,7 @@ public:
     DynamicMeasurement vehicleDynamicsModel(double t, double Velocity, double Steer) {
         DynamicMeasurement chassis_out;
         chassis_out.time = t;
-        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
+//        std::cout<<"velocity is "<<Velocity<<"-------steer is "<<Steer<<std::endl;
         double steer = 0, bias = 0;
         double beta;
         const double k1 = 30082 * 2;//front tyre
@@ -554,6 +554,8 @@ public:
         }
         // 2. integrate chassis data and optimize
         if(useChassis){
+            clock_t start1, finish1;
+            start1 = clock();
             while (!chaQueOpt.empty()) {
                 // pop and integrate chassis data that is between two optimizations
                 DynamicMeasurement *thisChassis= &chaQueOpt.front();
@@ -569,6 +571,10 @@ public:
                 } else
                     break;
             }
+            finish1 = clock();
+//            printf( "1 integrate chassis data is ");
+//            double duration = (finish1 - start1) / 1;
+//            printf( "%f ms\n", duration );
         }
 
         // add imu factor to graph
@@ -603,6 +609,8 @@ public:
 
         // add chassis factor
         if (useChassis) {
+            clock_t start2, finish2;
+            start2 = clock();
             const gtsam::PreintegratedChaMeasurements &preint_cha = dynamic_cast<const gtsam::PreintegratedChaMeasurements &>(*chaIntegratorOpt_);
             gtsam::ChaFactor cha_factor(X(key - 1), X(key), K(key - 1), preint_cha);
             graphFactors.add(cha_factor);
@@ -617,28 +625,44 @@ public:
                                                                                sqrt(chaIntegratorOpt_->deltaTij()) *
                                                                                noiseModelBetweenBias)));
             graphValues.insert(K(key), prevBiasCha_);
+            finish2 = clock();
+//            printf( "2 add cha bias is ");
+//            double duration = (finish2 - start2) / 1;
+//            printf( "%f ms\n", duration );
         }
 
         // optimize
+        clock_t start3, finish3;
+        start3 = clock();
         optimizer.update(graphFactors, graphValues);
         optimizer.update();
         graphFactors.resize(0);
         graphValues.clear();
         // Overwrite the beginning of the preintegration for the next step.
         gtsam::Values result = optimizer.calculateEstimate();
+        finish3 = clock();
+//        printf( "3 optimize is ");
+        double duration = (finish3 - start3) / 1;
+//        printf( "%f\n", duration );
+
         prevPose_ = result.at<gtsam::Pose3>(X(key));
         prevVel_ = result.at<gtsam::Vector3>(V(key));
         prevState_ = gtsam::NavState(prevPose_, prevVel_);
         prevBias_ = result.at<gtsam::imuBias::ConstantBias>(B(key));
-//        std::cout<<"imuBias is =============="<<prevBias_<<std::endl;
+
         // Reset the optimization preintegration object.
         imuIntegratorOpt_->resetIntegrationAndSetBias(prevBias_);
 
         if(useChassis){
+            clock_t start4, finish4;
+            start4 = clock();
             prevStateCha_=gtsam::ChaNavState(prevPose_);
             prevBiasCha_=result.at<gtsam::chaBias::ConstantBias>(K(key));
-//            std::cout<<"chaBias is --------------"<<prevBiasCha_<<std::endl;
             chaIntegratorOpt_->resetIntegrationAndSetBias(prevBiasCha_);
+            finish4 = clock();
+//            printf( "4 resetIntegrationAndSetBias is ");
+//            double duration = (finish4 - start4) / 1;
+//            printf( "%f ms\n", duration );
         }
         // check optimization
         if (failureDetection(prevVel_, prevBias_)) {
