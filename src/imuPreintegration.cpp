@@ -161,6 +161,7 @@ class IMUPreintegration : public ParamServer {
 public:
 
     std::mutex mtx;
+    ofstream kfile;
     struct DynamicMeasurement {
         double time;
         gtsam::Vector3 velocity;
@@ -670,7 +671,7 @@ public:
             return;
         }
 
-        // 2. after optiization, re-propagate imu odometry preintegration
+        // 2. after optimization, re-propagate imu odometry preintegration
         prevStateOdom = prevState_;
         prevBiasOdom = prevBias_;
 
@@ -700,6 +701,12 @@ public:
         }
         if(useChassis){
             prevBiasCha = prevBiasCha_;
+            gtsam::Vector3 v=prevBiasCha.wheelspeed();
+            kfile.open("/home/xxiao/data/kvel.txt",ios::app); //pose
+            kfile.precision(10);
+            kfile <<v[0]<< " " <<v[1]<< " "<<v[2];
+            kfile<< "\n";
+            kfile.close();
             prevStateCha = prevStateCha_;
             double lastChaQT = -1;
             DynamicMeasurement *thisChassis=&chaQueCha.front();
